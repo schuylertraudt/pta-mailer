@@ -288,9 +288,8 @@ export const sends = pgTable(
     campaignId: uuid("campaign_id")
       .notNull()
       .references(() => campaigns.id),
-    subscriberId: uuid("subscriber_id")
-      .notNull()
-      .references(() => subscribers.id),
+    // Nulled when a subscriber is deleted, so campaign stats survive a data-deletion request.
+    subscriberId: uuid("subscriber_id").references(() => subscribers.id, { onDelete: "set null" }),
     status: sendStatus("status").notNull().default("queued"),
     providerMessageId: text("provider_message_id"),
     attempts: integer("attempts").notNull().default(0),
@@ -307,6 +306,23 @@ export const sends = pgTable(
     index("sends_campaign_status_idx").on(t.campaignId, t.status),
     index("sends_dispatch_idx").on(t.status, t.nextAttemptAt),
   ],
+);
+
+export const dataAuditAction = pgEnum("data_audit_action", ["subscriber_delete", "subscriber_export"]);
+
+// Who deleted or exported subscriber data. Deliberately stores no email addresses.
+export const dataAudit = pgTable(
+  "data_audit",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    action: dataAuditAction("action").notNull(),
+    actorId: uuid("actor_id")
+      .notNull()
+      .references(() => officers.id),
+    details: jsonb("details").$type<Record<string, unknown>>().notNull().default({}),
+    timestamp: ts("timestamp").notNull().defaultNow(),
+  },
+  (t) => [index("data_audit_timestamp_idx").on(t.timestamp)],
 );
 
 // Fixed-window counters for public endpoints (subscribe). Shared across instances.

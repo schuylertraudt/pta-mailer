@@ -23,6 +23,21 @@ If every admin is locked out **(dev)**: set `BOOTSTRAP_ADMIN_EMAIL` to a board
 member's Google email and redeploy; it only works while no active admin exists.
 Otherwise, promote someone directly in the database and record why.
 
+## Subscriber requests
+
+**Subscribers** (admins and senders) lists everyone with search by email,
+status, grade and teacher. Admins also see Delete and Export.
+
+- **"Please take me off the list":** they can use the unsubscribe link in any
+  email. If they ask you instead, delete them and leave "add to do-not-mail
+  list" ticked.
+- **"Delete my data":** Delete. Tick "do-not-mail" unless they may want to
+  re-subscribe later; the do-not-mail list keeps only the email address and
+  why it's there.
+- **Exports** download a CSV of the current search. The file contains family
+  email addresses: store it only in PTA-controlled storage and delete it when
+  done. Every delete and export is logged at the bottom of the page.
+
 ## Deliverability monitoring
 
 Check after every send (campaign page → Delivery):

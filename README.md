@@ -43,12 +43,12 @@ app/                       pages + route handlers (thin: parse, guard, call lib)
   page.tsx                 public subscribe form (QR target)
   confirm/, u/             confirm and unsubscribe pages (one button each)
   archive/                 public archive (stored HTML, strict CSP)
-  admin/                   officer UI (composer, media, templates, audiences, brand, officers)
+  admin/                   officer UI (composer, media, templates, subscribers, audiences, brand, officers)
   api/                     JSON endpoints, SES webhook, cron
 src/db/schema.ts           the whole data model
 src/lib/auth/              Google sign-in gate, Auth.js adapter, per-request guard, roles
 src/lib/officers/          bootstrap, add/role/deactivate/reactivate, 2-admin floor, audit
-src/lib/subscribers/       subscribe / confirm / unsubscribe / suppress
+src/lib/subscribers/       subscribe / confirm / unsubscribe / suppress; officer search, delete, CSV export
 src/lib/editor/            document model, allowlist sanitizer, TipTap extensions, HTML import
 src/lib/render/            React Email renderer, plaintext, size + content checks
 src/lib/images/            upload pipeline (sniff, convert, rotate, strip, resize, compress)
