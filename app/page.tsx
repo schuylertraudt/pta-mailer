@@ -25,6 +25,11 @@ export default function SubscribePage() {
         We only store your email and your home school, so we can send news that applies to you. We never ask for
         children&apos;s names. <Link href="/archive">Past newsletters</Link>
       </p>
+      <p className="muted" style={{ fontSize: 13, marginTop: 32, textAlign: "center" }}>
+        <Link href="/login" style={{ color: "inherit" }}>
+          PTA officer sign-in
+        </Link>
+      </p>
     </main>
   );
 }
