@@ -118,7 +118,7 @@ export default async function SubscribersPage(props: { searchParams: Promise<Rec
               <td>
                 {STATUS[s.status]}
                 {s.suppression && s.status === "active" && (
-                  <span className="badge warn" style={{ marginLeft: 6 }} title="On the do-not-mail list: won't receive campaigns">
+                  <span className="badge warn" style={{ marginLeft: 6 }} title="On the do-not-mail list: won't receive newsletters">
                     do not mail
                   </span>
                 )}

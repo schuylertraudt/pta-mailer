@@ -4,7 +4,7 @@ export default function MediaPage() {
   return (
     <div className="stack" style={{ maxWidth: 900 }}>
       <h1>Media library</h1>
-      <p className="muted">Images uploaded here can be reused in any campaign. Keep alt text up to date.</p>
+      <p className="muted">Images uploaded here can be reused in any newsletter. Keep alt text up to date.</p>
       <MediaLibrary />
     </div>
   );

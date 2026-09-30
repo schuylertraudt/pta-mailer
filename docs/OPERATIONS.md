@@ -40,13 +40,13 @@ status, grade and teacher. Admins also see Delete and Export.
 
 ## Deliverability monitoring
 
-Check after every send (campaign page → Delivery):
+Check after every send (the newsletter's page → Delivery):
 
 | Signal | Healthy | Act when |
 | --- | --- | --- |
 | Bounced | < 2% | > 5%: the list has stale addresses; don't import lists, rely on double opt-in |
 | Complaints | < 0.1% | > 0.3%: Gmail/Yahoo start filtering. Send less often, make content more relevant, check the From name is recognizable |
-| Failed | 0 | Any: open the campaign; `last_error` on the send rows explains why **(dev)** |
+| Failed | 0 | Any: open the newsletter; `last_error` on the send rows explains why **(dev)** |
 
 Monthly:
 - **SES console → Reputation metrics**: bounce and complaint rates. AWS pauses
@@ -103,7 +103,7 @@ To sign every officer out at once **(dev)**: `delete from sessions;`.
 2. `pg_restore --no-owner --clean --if-exists -d "<new url>" pta-YYYY-MM-DD.dump`
 3. `DATABASE_URL=<new url> npm run db:migrate` (brings the schema up to date).
 4. Point `DATABASE_URL` at it and redeploy.
-5. Sign in and spot-check officers, subscribers and the last campaign.
+5. Sign in and spot-check officers, subscribers and the last newsletter.
 
 Images live in the storage bucket, not the database, and are not deleted by a
 restore. Losing the bucket breaks images in old emails and the archive, so keep

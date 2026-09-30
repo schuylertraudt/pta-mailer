@@ -72,6 +72,13 @@ Key invariants, each covered by tests:
   images only from the storage domain. Header and footer (with unsubscribe) are
   injected by the renderer and aren't part of the document.
 
+## Terminology
+
+The UI says **newsletter**; the code and database say **campaign** (`campaigns`
+table, `/api/campaigns`, `src/lib/campaigns`). Same thing: one piece of content
+with its audience and approval status. Each per-family delivery of it is a row
+in `sends`.
+
 ## Decisions worth knowing
 
 - **Unsubscribe link opens a page with one "Unsubscribe" button** instead of

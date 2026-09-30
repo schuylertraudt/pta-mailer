@@ -259,7 +259,7 @@ export default function Composer(props: {
         method: "PATCH",
         body: { ...fields.current, bodyJson: editor.getJSON() },
       });
-      if (c.status !== "draft" && campaign.status === "draft") setNotice("Edited after submission, so this campaign is back to draft and needs approval again.");
+      if (c.status !== "draft" && campaign.status === "draft") setNotice("Edited after submission, so this newsletter is back to draft and needs approval again.");
       setC((prev) => ({ ...prev, status: campaign.status }));
       setSaveState("saved");
     } catch (e) {
@@ -359,7 +359,7 @@ export default function Composer(props: {
     <div className="stack">
       <div className="row" style={{ justifyContent: "space-between" }}>
         <div className="row">
-          <a href="/admin">← Campaigns</a>
+          <a href="/admin">← Newsletters</a>
           <span className="badge">{STATUS_LABEL[c.status]}</span>
           <span className="muted" style={{ fontSize: 13 }}>
             {editable ? { saved: "All changes saved", dirty: "Unsaved changes", saving: "Saving…", error: "Save failed" }[saveState] : "Read-only"}
@@ -502,7 +502,7 @@ export default function Composer(props: {
         <TemplateModal campaignId={c.id} beforeSave={() => saveRef.current()} onClose={() => setModal(null)} onSaved={(n) => setNotice(`Saved template "${n}".`)} />
       )}
       {modal?.kind === "send" && (
-        <Modal title="Send campaign" onClose={() => setModal(null)}>
+        <Modal title="Send newsletter" onClose={() => setModal(null)}>
           <p>
             <strong>{c.subject || "(no subject)"}</strong>
           </p>

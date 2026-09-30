@@ -29,7 +29,7 @@ export const campaignPatch = z.object({
 
 export async function getCampaign(db: DbOrTx, id: string) {
   const [c] = await db.select().from(campaigns).where(eq(campaigns.id, id));
-  if (!c) throw new CampaignError(404, "Campaign not found");
+  if (!c) throw new CampaignError(404, "Newsletter not found");
   return c;
 }
 
@@ -74,8 +74,8 @@ export async function updateCampaign(db: Db, id: string, raw: z.input<typeof cam
   const patch = campaignPatch.parse(raw);
   return db.transaction(async (tx) => {
     const [c] = await tx.select().from(campaigns).where(eq(campaigns.id, id)).for("update");
-    if (!c) throw new CampaignError(404, "Campaign not found");
-    if (!EDITABLE.includes(c.status as never)) throw new CampaignError(409, "This campaign has already been sent and can't be edited.");
+    if (!c) throw new CampaignError(404, "Newsletter not found");
+    if (!EDITABLE.includes(c.status as never)) throw new CampaignError(409, "This newsletter has already been sent and can't be edited.");
     if (patch.segmentId) {
       const [seg] = await tx.select().from(segments).where(eq(segments.id, patch.segmentId));
       if (!seg) throw new CampaignError(400, "Unknown audience segment");
@@ -106,7 +106,7 @@ async function transition(db: Db, id: string, from: readonly string[], set: Part
     .returning();
   if (!row) {
     const c = await getCampaign(db, id);
-    throw new CampaignError(409, `Campaign is ${c.status.replace("_", " ")}; that action isn't available.`);
+    throw new CampaignError(409, `Newsletter is ${c.status.replace("_", " ")}; that action isn't available.`);
   }
   return row;
 }
@@ -124,5 +124,5 @@ export async function deleteDraft(db: Db, id: string) {
     .delete(campaigns)
     .where(and(eq(campaigns.id, id), inArray(campaigns.status, ["draft", "pending_approval", "approved"])))
     .returning({ id: campaigns.id });
-  if (!row) throw new CampaignError(409, "Only unsent campaigns can be deleted.");
+  if (!row) throw new CampaignError(409, "Only unsent newsletters can be deleted.");
 }

@@ -51,7 +51,7 @@ the DNS above handles the rest.
       2. SES → Email receiving → rule set → rule for `unsubscribe@news.pta.example.org`
          with action **SNS** (same topic is fine; add its ARN to `SNS_TOPIC_ARNS`).
       3. Set `UNSUBSCRIBE_MAILTO=unsubscribe@news.pta.example.org`.
-- [ ] Use the SES mailbox simulator to prove the loop: send a test campaign to a
+- [ ] Use the SES mailbox simulator to prove the loop: send a test newsletter to a
       committee segment containing `bounce@simulator.amazonses.com` and
       `complaint@simulator.amazonses.com` (add them as confirmed subscribers via SQL
       in a staging DB). Both must appear in `suppressions` within a minute.

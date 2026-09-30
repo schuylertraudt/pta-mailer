@@ -19,7 +19,7 @@ export default async function CampaignsPage() {
   return (
     <div className="stack">
       <div className="row" style={{ justifyContent: "space-between" }}>
-        <h1 style={{ margin: 0 }}>Campaigns</h1>
+        <h1 style={{ margin: 0 }}>Newsletters</h1>
         <NewCampaign templates={templates} />
       </div>
       <table className="list">
@@ -47,7 +47,7 @@ export default async function CampaignsPage() {
           {campaigns.length === 0 && (
             <tr>
               <td colSpan={4} className="muted">
-                No campaigns yet. Start one from a template above.
+                No newsletters yet. Start one from a template above.
               </td>
             </tr>
           )}

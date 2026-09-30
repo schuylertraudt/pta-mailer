@@ -22,7 +22,7 @@ export default function NewCampaign({ templates }: { templates: { id: string; na
   return (
     <div className="row">
       <select value={templateId} onChange={(e) => setTemplateId(e.target.value)} style={{ width: "auto" }} aria-label="Start from">
-        <option value="">Blank campaign</option>
+        <option value="">Blank newsletter</option>
         {templates.map((t) => (
           <option key={t.id} value={t.id}>
             {t.name}
@@ -30,7 +30,7 @@ export default function NewCampaign({ templates }: { templates: { id: string; na
         ))}
       </select>
       <button onClick={create} disabled={busy}>
-        New campaign
+        New newsletter
       </button>
       {error && <span className="error">{error}</span>}
     </div>
