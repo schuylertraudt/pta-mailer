@@ -1,7 +1,7 @@
 # PTA Mailer
 
 Standalone mailing list app for a school PTA. Families subscribe by email only
-(double opt-in, one-click unsubscribe). Officers sign in with Google, compose
+(double opt-in, one-click unsubscribe). Team members (committee members and coordinators) sign in with Google, compose
 branded newsletters in a block editor, and send through Amazon SES.
 
 - Launch steps: [docs/LAUNCH.md](docs/LAUNCH.md)
@@ -43,7 +43,7 @@ app/                       pages + route handlers (thin: parse, guard, call lib)
   page.tsx                 public subscribe form (QR target)
   confirm/, u/             confirm and unsubscribe pages (one button each)
   archive/                 public archive (stored HTML, strict CSP)
-  admin/                   officer UI (composer, media, templates, subscribers, audiences, brand, officers)
+  admin/                   team UI (composer, media, templates, subscribers, audiences, brand, team)
   api/                     JSON endpoints, SES webhook, cron
 src/db/schema.ts           the whole data model
 src/lib/auth/              Google sign-in gate, Auth.js adapter, per-request guard, roles
@@ -73,6 +73,10 @@ Key invariants, each covered by tests:
   injected by the renderer and aren't part of the document.
 
 ## Terminology
+
+The UI says **team member**; the code and database say **officer**
+(`officers` table, `/api/admin/officers`, `src/lib/officers`). The team page
+lives at `/admin/team`.
 
 The UI says **newsletter**; the code and database say **campaign** (`campaigns`
 table, `/api/campaigns`, `src/lib/campaigns`). Same thing: one piece of content

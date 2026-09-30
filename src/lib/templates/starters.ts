@@ -39,7 +39,7 @@ export const STARTER_TEMPLATES: { id: string; name: string; body: Doc }[] = [
         button("See the full calendar"),
         divider,
         h(3, "Get Involved"),
-        p(t("Questions or ideas? Reply to this email and a PTA officer will get back to you.")),
+        p(t("Questions or ideas? Reply to this email and someone from the PTA will get back to you.")),
       ],
     },
   },

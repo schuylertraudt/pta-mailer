@@ -11,8 +11,8 @@ export default async function OfficersPage() {
   const [officers, audit] = await Promise.all([listOfficers(db), listAudit(db)]);
   return (
     <div className="stack">
-      <h1>Officers</h1>
-      <p className="muted">At least two active admins are always required. Officers are never deleted, only deactivated.</p>
+      <h1>Team</h1>
+      <p className="muted">At least two active admins are always required. Team members are never deleted, only deactivated.</p>
       <Officers
         meId={officer.id}
         officers={officers.map((o) => ({ ...o, lastLoginAt: o.lastLoginAt?.toISOString() ?? null }))}

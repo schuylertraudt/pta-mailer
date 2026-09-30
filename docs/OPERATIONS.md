@@ -1,26 +1,27 @@
 # Operations
 
-Written for PTA officers who are not developers. Anything marked **(dev)**
+Written for PTA volunteers who are not developers. Anything marked **(dev)**
 needs someone comfortable with a terminal.
 
-## Officer turnover (every election)
+## Team turnover (each new school year or committee change)
 
-1. **After the election:** an outgoing admin opens **Officers** and adds each
-   incoming officer by their Google email with the right role
+1. **When new coordinators or committee members are chosen:** an outgoing admin
+   opens **Team** and adds each new person by their Google email with the right role
    (admin / sender / drafter). No invite is sent; access works on their next
    Google sign-in. Everyone is emailed when admin or sender access is granted.
-2. **First day of the new term:** deactivate departing officers. Deactivation
+2. **When someone steps down:** deactivate them. Deactivation
    signs them out immediately and cannot be undone by them. It never deletes
    anyone; reactivating restores the same record.
-3. **Incoming president confirms at least 2 active admins.** The app refuses any
+3. **Keep at least 2 active admins.** The app refuses any
    change that would leave fewer than two, so promote the new admins *before*
    deactivating the old ones.
-4. **Once a year:** compare the Officers list against the board roster and the
+4. **Once a year:** compare the Team list against your current roster of
+   coordinators and committee members, and check the
    audit log at the bottom of that page. Anything you don't recognize: deactivate
    first, ask questions second.
 
-If every admin is locked out **(dev)**: set `BOOTSTRAP_ADMIN_EMAIL` to a board
-member's Google email and redeploy; it only works while no active admin exists.
+If every admin is locked out **(dev)**: set `BOOTSTRAP_ADMIN_EMAIL` to a trusted
+volunteer's Google email and redeploy; it only works while no active admin exists.
 Otherwise, promote someone directly in the database and record why.
 
 ## Subscriber requests
@@ -75,7 +76,7 @@ sudo systemctl restart pta-web pta-worker`.
 
 ## Rotating secrets
 
-Do this when an officer with access to the hosting account leaves, or yearly.
+Do this when someone with access to the hosting account leaves, or yearly.
 After each change, redeploy (Vercel: environment variables only apply to new
 deployments).
 
@@ -88,7 +89,7 @@ deployments).
 | `CRON_SECRET` | any random string → host env | None |
 | `DATABASE_URL` password | Neon/Supabase → reset password → host env | Brief errors until redeployed |
 
-To sign every officer out at once **(dev)**: `delete from sessions;`.
+To sign every team member out at once **(dev)**: `delete from sessions;`.
 
 ## Backups and restore
 
@@ -103,7 +104,7 @@ To sign every officer out at once **(dev)**: `delete from sessions;`.
 2. `pg_restore --no-owner --clean --if-exists -d "<new url>" pta-YYYY-MM-DD.dump`
 3. `DATABASE_URL=<new url> npm run db:migrate` (brings the schema up to date).
 4. Point `DATABASE_URL` at it and redeploy.
-5. Sign in and spot-check officers, subscribers and the last newsletter.
+5. Sign in and spot-check the team, subscribers and the last newsletter.
 
 Images live in the storage bucket, not the database, and are not deleted by a
 restore. Losing the bucket breaks images in old emails and the archive, so keep

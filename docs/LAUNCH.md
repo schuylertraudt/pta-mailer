@@ -56,7 +56,7 @@ the DNS above handles the rest.
       `complaint@simulator.amazonses.com` (add them as confirmed subscribers via SQL
       in a staging DB). Both must appear in `suppressions` within a minute.
 
-## 3. Google Cloud (officer sign-in)
+## 3. Google Cloud (team sign-in)
 
 - [ ] Create a Google Cloud project for the PTA (owned by a PTA role account,
       not a personal one).
@@ -128,7 +128,7 @@ Cloudflare R2 shown; S3 and Supabase Storage (S3 endpoint) work the same way.
       Litmus / Email on Acid trial for all clients at once.)
 - [ ] In Gmail, open a test → ⋮ → "Show original": SPF, DKIM, DMARC all **PASS**.
 - [ ] Put the subscribe page URL on a QR code and a Facebook post.
-- [ ] **First real send goes to officers only**: create a committee audience
-      "Officers", have each officer subscribe through the public page and
+- [ ] **First real send goes to the team only**: create a committee audience
+      "Team", have each team member subscribe through the public page and
       confirm, add them to it, and send there first. Check Delivery stats,
       then send to everyone.

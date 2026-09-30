@@ -16,7 +16,7 @@ type Officer = {
 type Audit = { id: number; action: string; details: Record<string, unknown>; timestamp: string; officerEmail: string; actorEmail: string | null };
 
 const ROLES = ["admin", "sender", "drafter"] as const;
-const ROLE_HELP = "Admin: manage officers and brand, compose and send. Sender: compose and send. Drafter: compose; a sender or admin approves and sends.";
+const ROLE_HELP = "Admin: manage the team and brand, compose and send. Sender: compose and send. Drafter: compose; a sender or admin approves and sends.";
 
 export default function Officers(props: { officers: Officer[]; audit: Audit[]; meId: string }) {
   const router = useRouter();
@@ -113,7 +113,7 @@ export default function Officers(props: { officers: Officer[]; audit: Audit[]; m
           }, `Added ${email}. They can sign in with Google now.`);
         }}
       >
-        <strong>Add officer</strong>
+        <strong>Add team member</strong>
         <p className="muted" style={{ fontSize: 13 }}>
           Use the Google account email they&apos;ll sign in with. No invite needed: access works on their next Google sign-in. {ROLE_HELP}
         </p>
@@ -146,7 +146,7 @@ export default function Officers(props: { officers: Officer[]; audit: Audit[]; m
           <tr>
             <th>When</th>
             <th>Action</th>
-            <th>Officer</th>
+            <th>Team member</th>
             <th>By</th>
             <th>Details</th>
           </tr>

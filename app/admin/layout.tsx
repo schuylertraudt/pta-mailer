@@ -18,7 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         {can(officer.role, "view_subscribers") && <Link href="/admin/subscribers">Subscribers</Link>}
         {can(officer.role, "send") && <Link href="/admin/segments">Audiences</Link>}
         {can(officer.role, "manage_brand") && <Link href="/admin/brand">Brand</Link>}
-        {can(officer.role, "manage_officers") && <Link href="/admin/officers">Officers</Link>}
+        {can(officer.role, "manage_officers") && <Link href="/admin/team">Team</Link>}
         <span className="spacer" />
         <span className="muted" style={{ fontSize: 14 }}>
           {officer.email} · {officer.role}

@@ -27,7 +27,7 @@ export default function SubscribePage() {
       </p>
       <p className="muted" style={{ fontSize: 13, marginTop: 32, textAlign: "center" }}>
         <Link href="/login" style={{ color: "inherit" }}>
-          PTA officer sign-in
+          Team sign-in
         </Link>
       </p>
     </main>

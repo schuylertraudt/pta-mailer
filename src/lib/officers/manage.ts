@@ -44,7 +44,7 @@ async function activeAdminCount(tx: DbOrTx) {
 
 async function getForUpdate(tx: DbOrTx, id: string) {
   const [o] = await tx.select().from(officers).where(eq(officers.id, id)).for("update");
-  if (!o) throw new OfficerError(404, "Officer not found");
+  if (!o) throw new OfficerError(404, "Team member not found");
   return o;
 }
 
@@ -97,14 +97,14 @@ async function notify(db: Db, actor: Actor, change: Change) {
         : `PTA mailer: ${who} is no longer an admin`;
     const detail =
       kind === "granted"
-        ? `${by} granted ${who} the ${change.after.role} role. ${change.after.role === "admin" ? "Admins can manage officers and send to all families." : "Senders can send newsletters to all families."}`
+        ? `${by} granted ${who} the ${change.after.role} role. ${change.after.role === "admin" ? "Admins can manage the team and send to all families." : "Senders can send newsletters to all families."}`
         : change.after.active
           ? `${by} changed ${who} from admin to ${change.after.role}.`
           : `${by} deactivated ${who}. Their sessions were ended immediately.`;
     const { html, text } = simpleEmail({
       heading: subject.replace("PTA mailer: ", ""),
-      paragraphs: [detail, "If this wasn't expected, sign in and review the officer list and audit log now."],
-      button: { label: "Review officers", url: `${env().APP_URL}/admin/officers` },
+      paragraphs: [detail, "If this wasn't expected, sign in and review the team list and audit log now."],
+      button: { label: "Review team", url: `${env().APP_URL}/admin/team` },
     });
     const provider = getEmailProvider();
     await Promise.all([...to].map((addr) => provider.send({ to: addr, subject, html, text })));
@@ -120,7 +120,7 @@ export async function addOfficer(db: Db, actor: Actor, raw: z.input<typeof addOf
     if (existing) {
       throw new OfficerError(
         409,
-        existing.active ? "That email is already an officer." : "That officer is deactivated. Reactivate them instead.",
+        existing.active ? "That email is already on the team." : "That team member is deactivated. Reactivate them instead.",
       );
     }
     const [o] = await tx
@@ -144,7 +144,7 @@ export async function changeRole(db: Db, actor: Actor, officerId: string, rawRol
   const { before, officer } = await db.transaction(async (tx) => {
     await lockAdminSet(tx);
     const target = await getForUpdate(tx, officerId);
-    if (!target.active) throw new OfficerError(409, "Reactivate this officer before changing their role.");
+    if (!target.active) throw new OfficerError(409, "Reactivate this team member before changing their role.");
     if (target.role === role) return { before: target, officer: target };
     await assertAdminFloor(tx, target, { role, active: true });
     const [o] = await tx.update(officers).set({ role }).where(eq(officers.id, target.id)).returning();
@@ -168,7 +168,7 @@ export async function deactivateOfficer(db: Db, actor: Actor, officerId: string,
   const { before, officer } = await db.transaction(async (tx) => {
     await lockAdminSet(tx);
     const target = await getForUpdate(tx, officerId);
-    if (!target.active) throw new OfficerError(409, "Officer is already deactivated.");
+    if (!target.active) throw new OfficerError(409, "Already deactivated.");
     await assertAdminFloor(tx, target, { role: target.role, active: false });
     const [o] = await tx
       .update(officers)
@@ -195,7 +195,7 @@ export async function reactivateOfficer(db: Db, actor: Actor, officerId: string,
   const { before, officer } = await db.transaction(async (tx) => {
     await lockAdminSet(tx);
     const target = await getForUpdate(tx, officerId);
-    if (target.active) throw new OfficerError(409, "Officer is already active.");
+    if (target.active) throw new OfficerError(409, "Already active.");
     const [o] = await tx
       .update(officers)
       .set({ active: true, deactivatedAt: null, role: role ?? target.role })
