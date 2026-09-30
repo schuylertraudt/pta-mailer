@@ -217,7 +217,6 @@ export const assets = pgTable(
   },
   (t) => [
     uniqueIndex("assets_storage_key_key").on(t.storageKey),
-    check("assets_public_url_https", sql`${t.publicUrl} like 'https://%'`),
     check("assets_mime_type", sql`${t.mimeType} in ('image/jpeg', 'image/png', 'image/gif')`),
   ],
 );
@@ -272,6 +271,8 @@ export const campaigns = pgTable(
     approvedBy: uuid("approved_by").references(() => officers.id),
     sentBy: uuid("sent_by").references(() => officers.id),
     sentAt: ts("sent_at"),
+    // Sent campaigns appear in the public archive unless turned off (e.g. committee-only mail).
+    showInArchive: boolean("show_in_archive").notNull().default(true),
     createdAt: createdAt(),
     updatedAt: ts("updated_at").notNull().defaultNow(),
   },
@@ -292,6 +293,8 @@ export const sends = pgTable(
     providerMessageId: text("provider_message_id"),
     attempts: integer("attempts").notNull().default(0),
     lastError: text("last_error"),
+    // Retry backoff: a queued row is not dispatched before this time.
+    nextAttemptAt: ts("next_attempt_at").notNull().defaultNow(),
     sentAt: ts("sent_at"),
     createdAt: createdAt(),
   },
@@ -300,5 +303,13 @@ export const sends = pgTable(
     uniqueIndex("sends_campaign_subscriber_key").on(t.campaignId, t.subscriberId),
     uniqueIndex("sends_provider_message_id_key").on(t.providerMessageId),
     index("sends_campaign_status_idx").on(t.campaignId, t.status),
+    index("sends_dispatch_idx").on(t.status, t.nextAttemptAt),
   ],
 );
+
+// Fixed-window counters for public endpoints (subscribe). Shared across instances.
+export const rateLimits = pgTable("rate_limits", {
+  key: text("key").primaryKey(),
+  windowStart: ts("window_start").notNull(),
+  count: integer("count").notNull(),
+});

@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "PTA News",
-  description: "School PTA mailing list",
+  description: "School PTA newsletter",
 };
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1 };
@@ -10,7 +11,7 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1 };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body style={{ fontFamily: "Arial, Helvetica, sans-serif", margin: 0 }}>{children}</body>
+      <body>{children}</body>
     </html>
   );
 }
