@@ -143,3 +143,32 @@ describe("asset upload", () => {
     expect(anon.status).toBe(401);
   });
 });
+
+describe("direct-to-bucket upload finalize", () => {
+  it("processes an incoming original, stores the clean copy, deletes the original", async () => {
+    const { finalizeUpload, createUploadUrl } = await import("@/lib/assets/service");
+    const o = await makeOfficer(db, "drafter");
+    const storage = getStorage() as MemoryStorage;
+    expect(await createUploadUrl({ contentType: "image/jpeg", size: 1000 })).toEqual({ direct: false });
+    await expect(createUploadUrl({ contentType: "image/jpeg", size: MAX_UPLOAD_BYTES + 1 })).rejects.toBeInstanceOf(ImageRejected);
+
+    const key = "incoming/0b0e9b6e-3c1a-4a55-9d62-1b0b5b1c2d3e";
+    storage.incoming.set(key, await photoWithGps(1600, 1200, 1));
+    const asset = await finalizeUpload(db, key, { altText: "x", uploadedBy: o.id });
+    expect(asset.width).toBe(1200);
+    expect(storage.incoming.has(key)).toBe(false);
+    expect((await sharp(storage.objects.get(asset.storageKey)!.body).metadata()).exif).toBeUndefined();
+  });
+
+  it("rejects bad keys, missing and oversized originals", async () => {
+    const { finalizeUpload } = await import("@/lib/assets/service");
+    const o = await makeOfficer(db, "drafter");
+    const storage = getStorage() as MemoryStorage;
+    await expect(finalizeUpload(db, "images/2026/09/someone-elses.jpg", { altText: "", uploadedBy: o.id })).rejects.toThrow("Invalid upload");
+    await expect(finalizeUpload(db, "incoming/0b0e9b6e-3c1a-4a55-9d62-1b0b5b1c2d3f", { altText: "", uploadedBy: o.id })).rejects.toThrow("not found");
+    const key = "incoming/0b0e9b6e-3c1a-4a55-9d62-1b0b5b1c2d40";
+    storage.incoming.set(key, Buffer.alloc(MAX_UPLOAD_BYTES + 1));
+    await expect(finalizeUpload(db, key, { altText: "", uploadedBy: o.id })).rejects.toThrow("10 MB");
+    expect(storage.incoming.has(key)).toBe(false);
+  });
+});

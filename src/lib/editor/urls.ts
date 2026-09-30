@@ -21,7 +21,7 @@ export function safeImageUrl(raw: unknown, storageBase: string): string | null {
     const u = new URL(raw.trim());
     const base = new URL(storageBase.replace(/\/+$/, "") + "/");
     if (u.origin !== base.origin || !u.pathname.startsWith(base.pathname)) return null;
-    if (u.protocol !== "https:" && process.env.NODE_ENV === "production") return null;
+    if (u.protocol !== "https:" && !(u.protocol === "http:" && ["localhost", "127.0.0.1"].includes(u.hostname))) return null;
     if (u.username || u.password) return null;
     return u.toString();
   } catch {

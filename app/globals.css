@@ -56,3 +56,28 @@ table.list th, table.list td { text-align: left; padding: 8px; border-bottom: 1p
 nav.admin { display: flex; gap: 16px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--card); flex-wrap: wrap; align-items: center; }
 nav.admin .spacer { flex: 1; }
 .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border); }
+
+/* Composer */
+@media (max-width: 1000px) { .composer-grid { grid-template-columns: minmax(0, 1fr) !important; } }
+.editor .ProseMirror { min-height: 420px; padding: 16px; outline: none; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; }
+.editor .ProseMirror h1 { font-size: 28px; line-height: 34px; margin: 0 0 12px; }
+.editor .ProseMirror h2 { font-size: 22px; line-height: 28px; margin: 0 0 12px; }
+.editor .ProseMirror h3 { font-size: 18px; line-height: 24px; margin: 0 0 12px; }
+.editor .ProseMirror p { margin: 0 0 16px; }
+.editor .ProseMirror hr { border: none; border-top: 1px solid var(--border); margin: 8px 0 24px; }
+.editor .ProseMirror .ProseMirror-selectednode { outline: 2px solid var(--primary); outline-offset: 2px; }
+.editor .ed-image { margin: 0 0 16px; }
+.editor .ed-image img { display: block; height: auto; }
+.editor .ed-image.align-center img, .editor .ed-button.align-center { margin-left: auto; margin-right: auto; text-align: center; }
+.editor .ed-image.align-right img, .editor .ed-button.align-right { margin-left: auto; text-align: right; }
+.editor .ed-button { margin: 8px 0 24px; }
+.editor .ed-button-inner { display: inline-block; padding: 12px 28px; border-radius: 4px; font-weight: bold; color: #fff; background: var(--pal-primary); }
+.editor .ed-button-inner.color-accent { background: var(--pal-accent); color: #111; }
+.editor .ed-spacer { background: repeating-linear-gradient(45deg, transparent, transparent 6px, var(--border) 6px, var(--border) 7px); margin: 0 0 8px; }
+.editor .ed-two-col { display: flex; gap: 16px; margin: 0 0 16px; border: 1px dashed var(--border); padding: 8px; }
+.editor .ed-two-col.pos-right { flex-direction: row-reverse; }
+.editor .ed-two-col-img { flex: 1; }
+.editor .ed-two-col-img img { width: 100%; height: auto; display: block; }
+.editor .ed-two-col-text { flex: 1; }
+.editor .ProseMirror li p { margin: 0 0 6px; }
+.editor .ProseMirror ul, .editor .ProseMirror ol { margin: 0 0 16px; padding-left: 24px; }

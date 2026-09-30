@@ -16,7 +16,10 @@ const schema = z.object({
     .refine((v) => !FREEMAIL.test(v), "EMAIL_FROM must be a role address on the PTA domain, not a personal mailbox"),
   EMAIL_REPLY_TO: z.string().optional(),
   UNSUBSCRIBE_MAILTO: z.email().optional(),
-  AWS_REGION: z.string().optional(),
+  // Not AWS_*: Vercel reserves those names.
+  SES_REGION: z.string().optional(),
+  SES_ACCESS_KEY_ID: z.string().optional(),
+  SES_SECRET_ACCESS_KEY: z.string().optional(),
   SES_CONFIGURATION_SET: z.string().optional(),
   // Messages per second allowed by the provider account (SES default production quota is 14).
   SEND_RATE_PER_SECOND: z.coerce.number().positive().default(10),
@@ -29,6 +32,8 @@ const schema = z.object({
   S3_ENDPOINT: z.string().optional(),
   S3_REGION: z.string().default("auto"),
   S3_BUCKET: z.string().optional(),
+  // Private bucket for unprocessed originals (defaults to S3_BUCKET under incoming/).
+  S3_INCOMING_BUCKET: z.string().optional(),
   S3_ACCESS_KEY_ID: z.string().optional(),
   S3_SECRET_ACCESS_KEY: z.string().optional(),
   // Public HTTPS base for stored images, e.g. https://images.pta.example.org
@@ -40,6 +45,12 @@ const schema = z.object({
 
 export type Env = z.infer<typeof schema>;
 
+/** https, or plain http only for a local production build (next start on localhost). */
+export function isHttpsOrLocal(url: string): boolean {
+  const u = new URL(url);
+  return u.protocol === "https:" || (u.protocol === "http:" && ["localhost", "127.0.0.1"].includes(u.hostname));
+}
+
 let cached: Env | undefined;
 
 /** Validated environment. Throws a readable error listing every bad variable. */
@@ -50,7 +61,7 @@ export function env(): Env {
     const issues = parsed.error.issues.map((i) => `  ${i.path.join(".")}: ${i.message}`).join("\n");
     throw new Error(`Invalid environment configuration:\n${issues}`);
   }
-  if (parsed.data.NODE_ENV === "production" && !parsed.data.STORAGE_PUBLIC_BASE_URL.startsWith("https://")) {
+  if (parsed.data.NODE_ENV === "production" && !isHttpsOrLocal(parsed.data.STORAGE_PUBLIC_BASE_URL)) {
     throw new Error("STORAGE_PUBLIC_BASE_URL must be https in production");
   }
   cached = parsed.data;

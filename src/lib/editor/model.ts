@@ -9,7 +9,12 @@ export const ALIGNS: readonly Align[] = ["left", "center", "right"];
 
 /** Content column width inside the 600px container (24px side padding). */
 export const CONTENT_WIDTH = 552;
-export const COLUMN_WIDTH = CONTENT_WIDTH / 2;
+/**
+ * Each half of the two-column block. Kept below CONTENT_WIDTH / 2 so both
+ * inline-block columns fit side by side even when a client adds a few pixels
+ * of its own padding; below ~560px they stack.
+ */
+export const COLUMN_WIDTH = 264;
 
 /** Text colors are palette tokens, resolved against brand settings at render time. */
 export const COLOR_TOKENS = ["primary", "accent", "dark", "gray", "muted"] as const;

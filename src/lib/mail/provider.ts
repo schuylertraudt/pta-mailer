@@ -39,10 +39,15 @@ export class SesProvider implements EmailProvider {
   readonly name = "ses";
   private client: SESv2Client;
   constructor(
-    private opts: { region?: string; configurationSet?: string } = {},
+    private opts: { region?: string; configurationSet?: string; accessKeyId?: string; secretAccessKey?: string } = {},
     client?: SESv2Client,
   ) {
-    this.client = client ?? new SESv2Client({ region: opts.region });
+    this.client =
+      client ??
+      new SESv2Client({
+        region: opts.region,
+        credentials: opts.accessKeyId && opts.secretAccessKey ? { accessKeyId: opts.accessKeyId, secretAccessKey: opts.secretAccessKey } : undefined,
+      });
   }
   async send(msg: OutboundEmail): Promise<SendResult> {
     const from = msg.from ?? env().EMAIL_FROM;
@@ -94,7 +99,12 @@ export function getEmailProvider(): EmailProvider {
     const e = env();
     provider =
       e.EMAIL_PROVIDER === "ses"
-        ? new SesProvider({ region: e.AWS_REGION, configurationSet: e.SES_CONFIGURATION_SET })
+        ? new SesProvider({
+            region: e.SES_REGION,
+            configurationSet: e.SES_CONFIGURATION_SET,
+            accessKeyId: e.SES_ACCESS_KEY_ID,
+            secretAccessKey: e.SES_SECRET_ACCESS_KEY,
+          })
         : e.EMAIL_PROVIDER === "memory"
           ? new MemoryProvider()
           : new ConsoleProvider();

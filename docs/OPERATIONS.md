@@ -1,0 +1,102 @@
+# Operations
+
+Written for PTA officers who are not developers. Anything marked **(dev)**
+needs someone comfortable with a terminal.
+
+## Officer turnover (every election)
+
+1. **After the election:** an outgoing admin opens **Officers** and adds each
+   incoming officer by their Google email with the right role
+   (admin / sender / drafter). No invite is sent; access works on their next
+   Google sign-in. Everyone is emailed when admin or sender access is granted.
+2. **First day of the new term:** deactivate departing officers. Deactivation
+   signs them out immediately and cannot be undone by them. It never deletes
+   anyone; reactivating restores the same record.
+3. **Incoming president confirms at least 2 active admins.** The app refuses any
+   change that would leave fewer than two, so promote the new admins *before*
+   deactivating the old ones.
+4. **Once a year:** compare the Officers list against the board roster and the
+   audit log at the bottom of that page. Anything you don't recognize: deactivate
+   first, ask questions second.
+
+If every admin is locked out **(dev)**: set `BOOTSTRAP_ADMIN_EMAIL` to a board
+member's Google email and redeploy; it only works while no active admin exists.
+Otherwise, promote someone directly in the database and record why.
+
+## Deliverability monitoring
+
+Check after every send (campaign page → Delivery):
+
+| Signal | Healthy | Act when |
+| --- | --- | --- |
+| Bounced | < 2% | > 5%: the list has stale addresses; don't import lists, rely on double opt-in |
+| Complaints | < 0.1% | > 0.3%: Gmail/Yahoo start filtering. Send less often, make content more relevant, check the From name is recognizable |
+| Failed | 0 | Any: open the campaign; `last_error` on the send rows explains why **(dev)** |
+
+Monthly:
+- **SES console → Reputation metrics**: bounce and complaint rates. AWS pauses
+  sending at 10% bounces or 0.5% complaints.
+- **Google Postmaster Tools** (<https://postmaster.google.com>, verify the
+  sending domain once): domain reputation should stay *High* or *Medium*.
+- **DMARC aggregate reports** arrive at the `rua` address. A free parser such as
+  Postmark's DMARC digests turns them into a weekly email.
+
+Bounces and complaints are suppressed automatically and are never mailed
+again. Unsubscribes are suppressed immediately. To let someone back in after a
+bounce (e.g. their mailbox was full), delete their row from `suppressions`
+**(dev)** and have them subscribe again.
+
+## Redeploying
+
+**Vercel:** every push to `main` deploys automatically. To redeploy without a
+code change: Vercel → project → Deployments → latest → ⋯ → Redeploy.
+
+**Schema changes (dev):** `DATABASE_URL=<prod> npm run db:migrate` before (or
+immediately after) deploying the commit that needs it. Migrations only add;
+they are safe to run twice.
+
+**Hetzner (dev):** `git pull && npm ci && npm run build && npm run db:migrate &&
+sudo systemctl restart pta-web pta-worker`.
+
+## Rotating secrets
+
+Do this when an officer with access to the hosting account leaves, or yearly.
+After each change, redeploy (Vercel: environment variables only apply to new
+deployments).
+
+| Secret | Where to rotate | Side effect |
+| --- | --- | --- |
+| `AUTH_SECRET` | `openssl rand -base64 32` → host env | Nothing visible; sessions are DB-backed. Open subscribe forms need a reload. |
+| `AUTH_GOOGLE_SECRET` | Google Cloud → Credentials → client → Reset secret | None after redeploy |
+| AWS keys | IAM → user → Security credentials → create new, deploy, delete old | None |
+| R2/S3 keys | Cloudflare → R2 → API tokens → create new, deploy, revoke old | None |
+| `CRON_SECRET` | any random string → host env | None |
+| `DATABASE_URL` password | Neon/Supabase → reset password → host env | Brief errors until redeployed |
+
+To sign every officer out at once **(dev)**: `delete from sessions;`.
+
+## Backups and restore
+
+- **Neon:** point-in-time restore is built in (Branches → Restore). Retention
+  depends on plan; free tier is 1 day, so also take the weekly dump below.
+- **Supabase:** Database → Backups (daily on paid plans).
+- **Weekly dump (dev):** `pg_dump "$DATABASE_URL" -Fc -f pta-$(date +%F).dump`,
+  stored somewhere the PTA controls (shared drive owned by a role account).
+
+**Restore (dev):**
+1. Create an empty database (new Neon branch or Supabase project).
+2. `pg_restore --no-owner --clean --if-exists -d "<new url>" pta-YYYY-MM-DD.dump`
+3. `DATABASE_URL=<new url> npm run db:migrate` (brings the schema up to date).
+4. Point `DATABASE_URL` at it and redeploy.
+5. Sign in and spot-check officers, subscribers and the last campaign.
+
+Images live in the storage bucket, not the database, and are not deleted by a
+restore. Losing the bucket breaks images in old emails and the archive, so keep
+bucket deletion protection on.
+
+## Handover pack for the next tech volunteer
+
+Store these in the PTA's shared (role-owned) password manager:
+- Hosting account (Vercel or Hetzner), database provider, Cloudflare, AWS,
+  Google Cloud project, domain registrar/DNS.
+- A copy of this file, `docs/LAUNCH.md`, and the repository URL.
