@@ -30,7 +30,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           }}
         >
           <button className="secondary small" type="submit">
-            Sign out
+            Log out
           </button>
         </form>
       </nav>

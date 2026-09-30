@@ -49,7 +49,7 @@ export default function Officers(props: { officers: Officer[]; audit: Audit[]; m
             <th>Email</th>
             <th>Role</th>
             <th>Status</th>
-            <th>Last sign-in</th>
+            <th>Last login</th>
             <th>Added by</th>
             <th />
           </tr>
@@ -85,7 +85,7 @@ export default function Officers(props: { officers: Officer[]; audit: Audit[]; m
                   <button
                     className="small danger"
                     onClick={() =>
-                      window.confirm(`Deactivate ${o.email}? They are signed out immediately.`) &&
+                      window.confirm(`Deactivate ${o.email}? They are logged out immediately.`) &&
                       run(() => api(`/api/admin/officers/${o.id}/deactivate`, { body: {} }), `Deactivated ${o.email}.`)
                     }
                   >
@@ -110,12 +110,12 @@ export default function Officers(props: { officers: Officer[]; audit: Audit[]; m
             await api("/api/admin/officers", { body: { email, name, role } });
             setEmail("");
             setName("");
-          }, `Added ${email}. They can sign in with Google now.`);
+          }, `Added ${email}. They can log in with Google now.`);
         }}
       >
         <strong>Add team member</strong>
         <p className="muted" style={{ fontSize: 13 }}>
-          Use the Google account email they&apos;ll sign in with. No invite needed: access works on their next Google sign-in. {ROLE_HELP}
+          Use the Google account email they&apos;ll log in with. No invite needed: access works the next time they log in with Google. {ROLE_HELP}
         </p>
         <div className="row" style={{ alignItems: "flex-end" }}>
           <div style={{ flex: 2, minWidth: 200 }}>

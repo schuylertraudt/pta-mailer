@@ -56,7 +56,7 @@ the DNS above handles the rest.
       `complaint@simulator.amazonses.com` (add them as confirmed subscribers via SQL
       in a staging DB). Both must appear in `suppressions` within a minute.
 
-## 3. Google Cloud (team sign-in)
+## 3. Google Cloud (team login)
 
 - [ ] Create a Google Cloud project for the PTA (owned by a PTA role account,
       not a personal one).
@@ -65,12 +65,12 @@ the DNS above handles the rest.
 - [ ] Scopes: `openid`, `.../auth/userinfo.email`, `.../auth/userinfo.profile`
       only. These are non-sensitive, so no Google verification review is needed.
 - [ ] **Publishing status: In production.** In "Testing", authorizations expire
-      after 7 days and only listed test users can sign in.
+      after 7 days and only listed test users can log in.
 - [ ] Credentials → OAuth client ID → Web application. Authorized redirect URIs:
       - `https://mailer.pta.example.org/api/auth/callback/google`
       - `http://localhost:3000/api/auth/callback/google` (development)
 - [ ] Put the client ID/secret in `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`.
-- [ ] Set `BOOTSTRAP_ADMIN_EMAIL` to the first admin's Google address, sign in
+- [ ] Set `BOOTSTRAP_ADMIN_EMAIL` to the first admin's Google address, log in
       once, then add a **second admin** immediately (the app requires two to
       demote or deactivate any admin). You can then remove the env var; it is
       ignored anyway once an active admin exists.

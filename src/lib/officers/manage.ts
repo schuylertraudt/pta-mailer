@@ -103,7 +103,7 @@ async function notify(db: Db, actor: Actor, change: Change) {
           : `${by} deactivated ${who}. Their sessions were ended immediately.`;
     const { html, text } = simpleEmail({
       heading: subject.replace("PTA mailer: ", ""),
-      paragraphs: [detail, "If this wasn't expected, sign in and review the team list and audit log now."],
+      paragraphs: [detail, "If this wasn't expected, log in and review the team list and audit log now."],
       button: { label: "Review team", url: `${env().APP_URL}/admin/team` },
     });
     const provider = getEmailProvider();

@@ -59,7 +59,7 @@ function assertSameOrigin(req: Request) {
 export async function requireOfficer(req: Request, perm?: Permission, db: Db = getDb()): Promise<Officer> {
   assertSameOrigin(req);
   const officer = await officerForSessionToken(db, sessionTokenFromCookieHeader(req.headers.get("cookie")));
-  if (!officer) throw new HttpError(401, "Sign in required");
+  if (!officer) throw new HttpError(401, "Login required");
   if (perm && !can(officer.role, perm)) throw new HttpError(403, "Forbidden");
   return officer;
 }

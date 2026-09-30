@@ -12,11 +12,11 @@ export default async function LoginPage(props: { searchParams: Promise<{ error?:
   const { error } = await props.searchParams;
   return (
     <main className="narrow">
-      <h1>PTA team sign-in</h1>
-      <p className="muted">Committee members and coordinators sign in with their Google account. Parents don&apos;t need to sign in.</p>
+      <h1>PTA team login</h1>
+      <p className="muted">Committee members and coordinators log in with their Google account. Parents don&apos;t need to log in.</p>
       {error && (
         <p className="error" role="alert">
-          {MESSAGES[error] ?? "Sign-in failed."}
+          {MESSAGES[error] ?? "Login failed."}
         </p>
       )}
       <form

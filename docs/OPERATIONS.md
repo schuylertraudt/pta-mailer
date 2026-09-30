@@ -8,7 +8,7 @@ needs someone comfortable with a terminal.
 1. **When new coordinators or committee members are chosen:** an outgoing admin
    opens **Team** and adds each new person by their Google email with the right role
    (admin / sender / drafter). No invite is sent; access works on their next
-   Google sign-in. Everyone is emailed when admin or sender access is granted.
+   Google login. Everyone is emailed when admin or sender access is granted.
 2. **When someone steps down:** deactivate them. Deactivation
    signs them out immediately and cannot be undone by them. It never deletes
    anyone; reactivating restores the same record.
@@ -104,7 +104,7 @@ To sign every team member out at once **(dev)**: `delete from sessions;`.
 2. `pg_restore --no-owner --clean --if-exists -d "<new url>" pta-YYYY-MM-DD.dump`
 3. `DATABASE_URL=<new url> npm run db:migrate` (brings the schema up to date).
 4. Point `DATABASE_URL` at it and redeploy.
-5. Sign in and spot-check the team, subscribers and the last newsletter.
+5. Log in and spot-check the team, subscribers and the last newsletter.
 
 Images live in the storage bucket, not the database, and are not deleted by a
 restore. Losing the bucket breaks images in old emails and the archive, so keep

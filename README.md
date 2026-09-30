@@ -1,7 +1,7 @@
 # PTA Mailer
 
 Standalone mailing list app for a school PTA. Families subscribe by email only
-(double opt-in, one-click unsubscribe). Team members (committee members and coordinators) sign in with Google, compose
+(double opt-in, one-click unsubscribe). Team members (committee members and coordinators) log in with Google, compose
 branded newsletters in a block editor, and send through Amazon SES.
 
 - Launch steps: [docs/LAUNCH.md](docs/LAUNCH.md)
