@@ -262,6 +262,8 @@ export const campaigns = pgTable(
     bodyJson: jsonb("body_json").notNull(),
     renderedHtml: text("rendered_html"),
     plaintextBody: text("plaintext_body"),
+    // Rendered at send time for the public archive: no unsubscribe tokens, no subscriber data.
+    archiveHtml: text("archive_html"),
     templateId: uuid("template_id").references(() => templates.id, { onDelete: "set null" }),
     segmentId: uuid("segment_id").references(() => segments.id),
     status: campaignStatus("status").notNull().default("draft"),

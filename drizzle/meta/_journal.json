@@ -15,6 +15,13 @@
       "when": 1790805572082,
       "tag": "0001_queue_archive_ratelimit",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790806485531,
+      "tag": "0002_campaign_archive_html",
+      "breakpoints": true
     }
   ]
 }

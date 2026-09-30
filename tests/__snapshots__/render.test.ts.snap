@@ -1,0 +1,79 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`editor JSON -> HTML snapshots > renders bulletList 1`] = `"<td class="pad" style="padding:16px 24px 8px"><ul style="font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:24px;color:#222222;margin:0 0 16px;padding-left:24px"><li class="fg" style="font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:24px;color:#222222;margin:0 0 6px">One</li><li class="fg" style="font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:24px;color:#222222;margin:0 0 6px">Two<ul style="font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:24px;color:#222222;margin:0 0 16px;padding-left:24px"><li class="fg" style="font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:24px;color:#222222;margin:0 0 6px">Nested</li></ul></li></ul></td></tr></tbody></table><table role="presentation" width="100%" cellPadding="0" cellSpacing="0" border="0"><tbody><tr>"`;
+
+exports[`editor JSON -> HTML snapshots > renders button 1`] = `"<td class="pad" style="padding:16px 24px 8px"><table role="presentation" width="100%" cellPadding="0" cellSpacing="0" border="0"><tbody><tr><td align="center" style="padding:8px 0 24px"><!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://example.org/rsvp?a=1&amp;b=2" style="height:48px;v-text-anchor:middle;width:160px;" arcsize="9%" stroke="f" fillcolor="#1F4E79"><w:anchorlock/><center style="color:#ffffff;font-family:Arial, Helvetica, sans-serif;font-size:16px;font-weight:bold;">RSVP now</center></v:roundrect><![endif]--><!--[if !mso]><!-- --><a href="https://example.org/rsvp?a=1&amp;b=2" target="_blank" style="background-color:#1F4E79;border-radius:4px;color:#ffffff;display:inline-block;font-family:Arial, Helvetica, sans-serif;font-size:16px;font-weight:bold;line-height:48px;text-align:center;text-decoration:none;padding:0 28px;-webkit-text-size-adjust:none;mso-hide:all;">RSVP now</a><!--<![endif]--></td></tr></tbody></table></td></tr></tbody></table><table role="presentation" width="100%" cellPadding="0" cellSpacing="0" border="0"><tbody><tr>"`;
+
+exports[`editor JSON -> HTML snapshots > renders divider 1`] = `"<td class="pad" style="padding:16px 24px 8px"><hr style="width:100%;border:none;border-top:1px solid #dddddd;margin:8px 0 24px"/></td></tr></tbody></table><table role="presentation" width="100%" cellPadding="0" cellSpacing="0" border="0"><tbody><tr>"`;
+
+exports[`editor JSON -> HTML snapshots > renders heading1 1`] = `"<td class="pad" style="padding:16px 24px 8px"><h1 class="fg" style="font-family:Arial, Helvetica, sans-serif;font-size:28px;line-height:34px;color:#111111;margin:0 0 12px;font-weight:bold;text-align:center">Heading One</h1></td></tr></tbody></table><table role="presentation" width="100%" cellPadding="0" cellSpacing="0" border="0"><tbody><tr>"`;
+
+exports[`editor JSON -> HTML snapshots > renders heading2 1`] = `"<td class="pad" style="padding:16px 24px 8px"><h2 class="fg" style="font-family:Arial, Helvetica, sans-serif;font-size:22px;line-height:28px;color:#111111;margin:0 0 12px;font-weight:bold;text-align:left">Heading Two</h2></td></tr></tbody></table><table role="presentation" width="100%" cellPadding="0" cellSpacing="0" border="0"><tbody><tr>"`;
+
+exports[`editor JSON -> HTML snapshots > renders heading3 1`] = `"<td class="pad" style="padding:16px 24px 8px"><h3 class="fg" style="font-family:Arial, Helvetica, sans-serif;font-size:18px;line-height:24px;color:#111111;margin:0 0 12px;font-weight:bold;text-align:right">Heading Three</h3></td></tr></tbody></table><table role="presentation" width="100%" cellPadding="0" cellSpacing="0" border="0"><tbody><tr>"`;
+
+exports[`editor JSON -> HTML snapshots > renders image 1`] = `"<td class="pad" style="padding:16px 24px 8px"><table role="presentation" width="100%" cellPadding="0" cellSpacing="0" border="0"><tbody><tr><td align="center" style="padding:0 0 16px"><a href="https://example.org/fair" target="_blank" style="display:block"><img src="https://images.pta.example.org/images/2026/09/photo.jpg" alt="Kids at the fair" width="400" style="display:block;width:100%;max-width:400px;height:auto;border:0;outline:none;text-decoration:none;margin:0 auto"/></a></td></tr></tbody></table></td></tr></tbody></table><table role="presentation" width="100%" cellPadding="0" cellSpacing="0" border="0"><tbody><tr>"`;
+
+exports[`editor JSON -> HTML snapshots > renders orderedList 1`] = `"<td class="pad" style="padding:16px 24px 8px"><ol start="3" style="font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:24px;color:#222222;margin:0 0 16px;padding-left:24px"><li class="fg" style="font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:24px;color:#222222;margin:0 0 6px">Third</li></ol></td></tr></tbody></table><table role="presentation" width="100%" cellPadding="0" cellSpacing="0" border="0"><tbody><tr>"`;
+
+exports[`editor JSON -> HTML snapshots > renders paragraph 1`] = `"<td class="pad" style="padding:16px 24px 8px"><p class="fg" style="font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:24px;color:#222222;margin:0 0 16px;text-align:left">Plain, <strong>bold</strong>, <em>italic</em>, <u>underline</u>, <span style="color:#F2A900">accent</span>, <a href="https://example.org/x" target="_blank" style="color:#1F4E79;text-decoration:underline">a link</a><br/>second line</p></td></tr></tbody></table><table role="presentation" width="100%" cellPadding="0" cellSpacing="0" border="0"><tbody><tr>"`;
+
+exports[`editor JSON -> HTML snapshots > renders spacer 1`] = `"<td class="pad" style="padding:16px 24px 8px"><table role="presentation" width="100%" cellPadding="0" cellSpacing="0" border="0"><tbody><tr><td height="32" style="height:32px;font-size:0;line-height:0"> </td></tr></tbody></table></td></tr></tbody></table><table role="presentation" width="100%" cellPadding="0" cellSpacing="0" border="0"><tbody><tr>"`;
+
+exports[`editor JSON -> HTML snapshots > renders the full shell (header, preheader, footer) 1`] = `
+"<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html dir="ltr" lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta content="text/html; charset=UTF-8" http-equiv="Content-Type"/><meta name="x-apple-disable-message-reformatting"/><meta name="color-scheme" content="light dark"/><meta name="supported-color-schemes" content="light dark"/><meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no"/><title>Subject</title><style>:root{color-scheme:light dark;supported-color-schemes:light dark;}
+body{margin:0;padding:0;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;}
+img{-ms-interpolation-mode:bicubic;}
+a[x-apple-data-detectors]{color:inherit !important;text-decoration:none !important;}
+@media only screen and (max-width:620px){.container{width:100% !important;}.pad{padding-left:16px !important;padding-right:16px !important;}}
+@media (prefers-color-scheme:dark){
+.bg-body{background-color:#111418 !important;}
+.bg-card{background-color:#1a1e24 !important;}
+.fg{color:#e8eaed !important;}
+.fg-muted{color:#a8b0ba !important;}
+.fg-link{color:#9cc3ff !important;}}
+[data-ogsc] .bg-body{background-color:#111418 !important;}
+[data-ogsc] .bg-card{background-color:#1a1e24 !important;}
+[data-ogsc] .fg{color:#e8eaed !important;}
+[data-ogsc] .fg-muted{color:#a8b0ba !important;}
+[data-ogsc] .fg-link{color:#9cc3ff !important;}
+</style><!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><style>table,td,div,h1,h2,h3,p,a,li{font-family:Arial,Helvetica,sans-serif !important;}</style><![endif]--></head><body class="bg-body" style="background-color:#f4f5f7;margin:0;padding:0"><div style="display:none;overflow:hidden;line-height:1px;opacity:0;max-height:0;max-width:0" data-skip-in-text="true">Preheader text<div> ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿ ‌​‍‎‏﻿</div></div><table border="0" width="100%" cellPadding="0" cellSpacing="0" role="presentation" align="center"><tbody><tr><td style="background-color:#f4f5f7;margin:0;padding:0"><table role="presentation" width="100%" cellPadding="0" cellSpacing="0" border="0" style="background-color:#f4f5f7" class="bg-body"><tbody><tr><td align="center" style="padding:24px 8px"><table align="center" width="100%" class="container bg-card" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:8px"><tbody><tr style="width:100%"><td><table role="presentation" width="100%" cellPadding="0" cellSpacing="0" border="0"><tbody><tr><td align="center" class="pad" style="padding:24px 24px 8px;border-top:6px solid #1F4E79;border-radius:8px 8px 0 0"><table role="presentation" cellPadding="0" cellSpacing="0" border="0"><tbody><tr><td style="background-color:#ffffff;padding:12px;border-radius:8px"><img src="https://images.pta.example.org/images/logo.png" alt="Example PTA" width="200" style="display:block;width:200px;max-width:100%;height:auto;border:0"/></td></tr></tbody></table></td></tr></tbody></table><table role="presentation" width="100%" cellPadding="0" cellSpacing="0" border="0"><tbody><tr><td class="pad" style="padding:16px 24px 8px"><p class="fg" style="font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:24px;color:#222222;margin:0 0 16px;text-align:left">Plain, <strong>bold</strong>, <em>italic</em>, <u>underline</u>, <span style="color:#F2A900">accent</span>, <a href="https://example.org/x" target="_blank" style="color:#1F4E79;text-decoration:underline">a link</a><br/>second line</p></td></tr></tbody></table><table role="presentation" width="100%" cellPadding="0" cellSpacing="0" border="0"><tbody><tr><td class="pad" style="padding:16px 24px 24px;border-top:1px solid #e5e7eb"><p class="fg-muted" style="font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:20px;color:#666666;margin:0 0 8px">You subscribed to PTA news.</p><p class="fg-muted" style="font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:20px;color:#666666;margin:0 0 8px">Example PTA, 1 Main St, Town, ST 00000</p><p class="fg-muted" style="font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:20px;color:#666666;margin:0 0 8px"><a href="https://pta.example.org/u/__UNSUBSCRIBE_TOKEN__" class="fg-link" style="color:#1F4E79;text-decoration:underline" data-role="unsubscribe">Unsubscribe</a> · <a href="https://pta.example.org/archive/abc" class="fg-link" style="color:#1F4E79;text-decoration:underline">View in browser</a></p></td></tr></tbody></table></td></tr></tbody></table></td></tr></tbody></table></td></tr></tbody></table></body></html>"
+`;
+
+exports[`editor JSON -> HTML snapshots > renders twoColumn 1`] = `"<td class="pad" style="padding:16px 24px 8px"><table role="presentation" width="100%" cellPadding="0" cellSpacing="0" border="0"><tbody><tr><td dir="rtl" style="font-size:0;padding:0 0 8px;text-align:left"><!--[if mso]><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" dir="rtl"><tr><td width="276" valign="top" dir="ltr"><![endif]--><div style="display:inline-block;width:100%;max-width:276px;vertical-align:top;direction:ltr"><div style="padding:0 0 16px 12px"><img src="https://images.pta.example.org/images/2026/09/photo.jpg" alt="Garden" width="264" style="display:block;width:100%;max-width:264px;height:auto;border:0;outline:none;text-decoration:none;margin:0"/></div></div><!--[if mso]></td><td width="276" valign="top" dir="ltr"><![endif]--><div style="display:inline-block;width:100%;max-width:276px;vertical-align:top;direction:ltr"><div style="padding:0 12px 0 0;font-size:16px"><p class="fg" style="font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:24px;color:#222222;margin:0 0 16px;text-align:left">Column text</p></div></div><!--[if mso]></td></tr></table><![endif]--></td></tr></tbody></table></td></tr></tbody></table><table role="presentation" width="100%" cellPadding="0" cellSpacing="0" border="0"><tbody><tr>"`;
+
+exports[`plaintext alternative > covers every block type 1`] = `
+"Plain, bold, italic, underline, accent, a link (https://example.org/x)
+second line
+
+HEADING ONE
+===========
+
+Heading Two
+-----------
+
+Heading Three
+
+- One
+- Two
+   - Nested
+
+3. Third
+
+----------------------------------------
+
+[Kids at the fair] https://example.org/fair
+
+RSVP now: https://example.org/rsvp?a=1&b=2
+
+[Garden]
+
+Column text
+
+--
+You subscribed to PTA news.
+Example PTA, 1 Main St, Town, ST 00000
+Unsubscribe: https://pta.example.org/u/__UNSUBSCRIBE_TOKEN__
+View in browser: https://pta.example.org/archive/abc
+"
+`;

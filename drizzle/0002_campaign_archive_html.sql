@@ -1,0 +1,1 @@
+ALTER TABLE "campaigns" ADD COLUMN "archive_html" text;
