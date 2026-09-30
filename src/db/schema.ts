@@ -131,14 +131,13 @@ export const officerAudit = pgTable(
 // Subscribers, segments, suppressions
 // ---------------------------------------------------------------------------
 
-// Grade and teacher only. Never store child names or other student data.
+// Email and home elementary school only. Never store child names or other student data.
 export const subscribers = pgTable(
   "subscribers",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     email: text("email").notNull(),
-    grade: text("grade"),
-    teacher: text("teacher"),
+    school: text("school"),
     status: subscriberStatus("status").notNull().default("pending"),
     consentAt: ts("consent_at").notNull(),
     confirmedAt: ts("confirmed_at"),
@@ -151,6 +150,7 @@ export const subscribers = pgTable(
     uniqueIndex("subscribers_confirm_token_key").on(t.confirmToken),
     uniqueIndex("subscribers_unsubscribe_token_key").on(t.unsubscribeToken),
     index("subscribers_status_idx").on(t.status),
+    index("subscribers_school_idx").on(t.school),
     check("subscribers_email_lower", sql`${t.email} = lower(${t.email})`),
     // 32 random bytes, base64url => 43 chars. Guards against weak tokens slipping in.
     check("subscribers_unsubscribe_token_len", sql`length(${t.unsubscribeToken}) >= 43`),
@@ -158,7 +158,7 @@ export const subscribers = pgTable(
   ],
 );
 
-// rule grammar: "all" | "grade=<grade>" | "teacher=<name>" | "committee=<name>".
+// rule grammar: "all" | "school=<school>" | "committee=<name>".
 // committee segments resolve through manual membership in subscriber_segments.
 export const segments = pgTable(
   "segments",

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { issueFormToken } from "@/lib/subscribers/form-token";
-import { GRADES } from "@/lib/grades";
+import { SCHOOLS } from "@/lib/schools";
 import { env } from "@/lib/env";
 import SubscribeForm from "@/components/SubscribeForm";
 
@@ -17,13 +17,13 @@ export default function SubscribePage() {
       <div className="card">
         <SubscribeForm
           formToken={issueFormToken()}
-          grades={[...GRADES]}
+          schools={[...SCHOOLS]}
           turnstileSiteKey={env().NEXT_PUBLIC_TURNSTILE_SITE_KEY}
         />
       </div>
       <p className="muted" style={{ fontSize: 14 }}>
-        We only store your email, and your child&apos;s grade and teacher so we can send relevant news. We never ask
-        for children&apos;s names. <Link href="/archive">Past newsletters</Link>
+        We only store your email and your home school, so we can send news that applies to you. We never ask for
+        children&apos;s names. <Link href="/archive">Past newsletters</Link>
       </p>
     </main>
   );

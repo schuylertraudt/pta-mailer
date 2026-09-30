@@ -8,15 +8,14 @@ export const PAGE_SIZE = 50;
 export const subscriberFilter = z.object({
   q: z.string().trim().max(200).optional().default(""),
   status: z.enum(["pending", "active", "unsubscribed", "bounced", "complained"]).or(z.literal("")).optional().default(""),
-  grade: z.string().trim().max(10).optional().default(""),
-  teacher: z.string().trim().max(80).optional().default(""),
+  school: z.string().trim().max(80).optional().default(""),
   page: z.coerce.number().int().min(1).max(10_000).optional().default(1),
 });
 export type SubscriberFilter = z.infer<typeof subscriberFilter>;
 
 export function filterFromSearchParams(sp: URLSearchParams | Record<string, string | undefined>): SubscriberFilter {
   const get = (k: string) => (sp instanceof URLSearchParams ? sp.get(k) : sp[k]) ?? undefined;
-  return subscriberFilter.parse({ q: get("q"), status: get("status"), grade: get("grade"), teacher: get("teacher"), page: get("page") });
+  return subscriberFilter.parse({ q: get("q"), status: get("status"), school: get("school"), page: get("page") });
 }
 
 // LIKE wildcards in user input are literal characters, not patterns.
@@ -26,8 +25,7 @@ function where(f: SubscriberFilter): SQL | undefined {
   return and(
     f.q ? ilike(subscribers.email, `%${likeEscape(f.q.toLowerCase())}%`) : undefined,
     f.status ? eq(subscribers.status, f.status) : undefined,
-    f.grade ? eq(subscribers.grade, f.grade) : undefined,
-    f.teacher ? ilike(subscribers.teacher, `%${likeEscape(f.teacher)}%`) : undefined,
+    f.school ? eq(subscribers.school, f.school) : undefined,
   );
 }
 
@@ -37,8 +35,7 @@ const suppressionReason = sql<string | null>`(select sp.reason from ${suppressio
 const columns = {
   id: subscribers.id,
   email: subscribers.email,
-  grade: subscribers.grade,
-  teacher: subscribers.teacher,
+  school: subscribers.school,
   status: subscribers.status,
   consentAt: subscribers.consentAt,
   confirmedAt: subscribers.confirmedAt,
@@ -90,7 +87,7 @@ export async function deleteSubscriber(db: Db, actorId: string, id: string, opts
   });
 }
 
-const CSV_COLUMNS = ["email", "grade", "teacher", "status", "on_do_not_mail_list", "consent_at", "confirmed_at", "created_at"] as const;
+const CSV_COLUMNS = ["email", "school", "status", "on_do_not_mail_list", "consent_at", "confirmed_at", "created_at"] as const;
 
 /** Quotes a CSV cell and defuses spreadsheet formula injection (=, +, -, @, tab, CR). */
 export function csvCell(v: unknown): string {
@@ -105,7 +102,7 @@ export async function exportSubscribersCsv(db: Db, actorId: string, f: Subscribe
   const lines = [
     CSV_COLUMNS.join(","),
     ...rows.map((r) =>
-      [r.email, r.grade, r.teacher, r.status, r.suppression ? "yes" : "no", r.consentAt, r.confirmedAt, r.createdAt].map(csvCell).join(","),
+      [r.email, r.school, r.status, r.suppression ? "yes" : "no", r.consentAt, r.confirmedAt, r.createdAt].map(csvCell).join(","),
     ),
   ];
   const { page: _page, ...filter } = f;

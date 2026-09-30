@@ -6,10 +6,10 @@ import { api } from "./api";
 
 type Seg = { id: string; name: string; rule: string; recipients: number };
 
-export default function Segments(props: { segments: Seg[]; grades: string[] }) {
+export default function Segments(props: { segments: Seg[]; schools: string[] }) {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [kind, setKind] = useState<"all" | "grade" | "teacher" | "committee">("grade");
+  const [kind, setKind] = useState<"all" | "school" | "committee">("school");
   const [value, setValue] = useState("");
   const [error, setError] = useState("");
   const [open, setOpen] = useState<string | null>(null);
@@ -102,22 +102,21 @@ export default function Segments(props: { segments: Seg[]; grades: string[] }) {
         <label>Who</label>
         <select value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}>
           <option value="all">Everyone</option>
-          <option value="grade">A grade</option>
-          <option value="teacher">A teacher&apos;s class</option>
+          <option value="school">One school</option>
           <option value="committee">A committee (hand-picked members)</option>
         </select>
-        {kind === "grade" && (
+        {kind === "school" && (
           <select value={value} onChange={(e) => setValue(e.target.value)} required>
-            <option value="">Choose a grade</option>
-            {props.grades.map((g) => (
+            <option value="">Choose a school</option>
+            {props.schools.map((g) => (
               <option key={g} value={g}>
                 {g}
               </option>
             ))}
           </select>
         )}
-        {(kind === "teacher" || kind === "committee") && (
-          <input value={value} onChange={(e) => setValue(e.target.value)} placeholder={kind === "teacher" ? "Teacher name, as parents enter it" : "Committee name"} required />
+        {kind === "committee" && (
+          <input value={value} onChange={(e) => setValue(e.target.value)} placeholder="Committee name" required />
         )}
         {error && <p className="error">{error}</p>}
         <button type="submit" style={{ marginTop: 12 }}>

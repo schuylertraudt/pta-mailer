@@ -9,7 +9,7 @@ import {
   suppressions,
 } from "@/db/schema";
 import { DEFAULT_BRAND, SEED_OFFICERS, seed } from "@/db/seed";
-import { GRADES } from "@/lib/grades";
+import { SCHOOLS } from "@/lib/schools";
 import { bootstrapAdmin } from "@/lib/officers/bootstrap";
 import { resetDb, testDb } from "./helpers/db";
 
@@ -18,7 +18,7 @@ afterAll(() => pool.end());
 beforeEach(() => resetDb(db));
 
 describe("seed", () => {
-  it("creates brand settings, officers, segments and subscribers across every grade", async () => {
+  it("creates brand settings, officers, segments and subscribers across every school", async () => {
     await seed(db);
 
     const [brand] = await db.select().from(brandSettings);
@@ -30,7 +30,7 @@ describe("seed", () => {
 
     const subs = await db.select().from(subscribers);
     expect(subs).toHaveLength(120);
-    expect(new Set(subs.map((s) => s.grade))).toEqual(new Set(GRADES));
+    expect(new Set(subs.map((s) => s.school))).toEqual(new Set(SCHOOLS));
     expect(new Set(subs.map((s) => s.status))).toEqual(new Set(["active", "pending", "unsubscribed", "bounced"]));
     for (const s of subs) {
       expect(s.email).toMatch(/@example\.com$/);
@@ -39,7 +39,7 @@ describe("seed", () => {
 
     const segs = await db.select().from(segments);
     expect(segs.map((s) => s.rule)).toContain("all");
-    expect(segs.filter((s) => s.rule.startsWith("grade="))).toHaveLength(GRADES.length);
+    expect(segs.filter((s) => s.rule.startsWith("school="))).toHaveLength(SCHOOLS.length);
     const [{ n }] = await db.select({ n: count() }).from(subscriberSegments);
     expect(n).toBeGreaterThan(0);
   });

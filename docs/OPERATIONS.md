@@ -26,7 +26,7 @@ Otherwise, promote someone directly in the database and record why.
 ## Subscriber requests
 
 **Subscribers** (admins and senders) lists everyone with search by email,
-status, grade and teacher. Admins also see Delete and Export.
+status and school. Admins also see Delete and Export.
 
 - **"Please take me off the list":** they can use the unsubscribe link in any
   email. If they ask you instead, delete them and leave "add to do-not-mail

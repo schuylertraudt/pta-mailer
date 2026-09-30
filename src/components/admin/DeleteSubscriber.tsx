@@ -33,7 +33,7 @@ export default function DeleteSubscriber({ id, email }: { id: string; email: str
       {open && (
         <Modal title="Delete subscriber" onClose={() => setOpen(false)}>
           <p>
-            Permanently delete <strong>{email}</strong> and their grade/teacher details? This can&apos;t be undone. Past newsletter
+            Permanently delete <strong>{email}</strong> and their school? This can&apos;t be undone. Past newsletter
             totals are kept without their address.
           </p>
           <label className="row" style={{ fontWeight: 400, alignItems: "flex-start" }}>

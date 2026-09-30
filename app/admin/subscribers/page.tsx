@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getDb } from "@/db";
 import { pageOfficerWith } from "@/lib/auth/page-guard";
 import { can } from "@/lib/auth/roles";
-import { GRADES } from "@/lib/grades";
+import { SCHOOLS } from "@/lib/schools";
 import { filterFromSearchParams, listDataAudit, searchSubscribers, statusCounts, type SubscriberFilter } from "@/lib/subscribers/admin";
 import DeleteSubscriber from "@/components/admin/DeleteSubscriber";
 import Forbidden from "@/components/admin/Forbidden";
@@ -74,19 +74,15 @@ export default async function SubscribersPage(props: { searchParams: Promise<Rec
           </select>
         </div>
         <div>
-          <label htmlFor="grade">Grade</label>
-          <select id="grade" name="grade" defaultValue={filter.grade}>
+          <label htmlFor="school">School</label>
+          <select id="school" name="school" defaultValue={filter.school}>
             <option value="">Any</option>
-            {GRADES.map((g) => (
+            {SCHOOLS.map((g) => (
               <option key={g} value={g}>
                 {g}
               </option>
             ))}
           </select>
-        </div>
-        <div style={{ flex: 1, minWidth: 140 }}>
-          <label htmlFor="teacher">Teacher contains</label>
-          <input id="teacher" name="teacher" defaultValue={filter.teacher} />
         </div>
         <button type="submit">Search</button>
         <Link href="/admin/subscribers" className="btn secondary">
@@ -102,8 +98,7 @@ export default async function SubscribersPage(props: { searchParams: Promise<Rec
         <thead>
           <tr>
             <th>Email</th>
-            <th>Grade</th>
-            <th>Teacher</th>
+            <th>School</th>
             <th>Status</th>
             <th>Signed up</th>
             {manage && <th />}
@@ -113,8 +108,7 @@ export default async function SubscribersPage(props: { searchParams: Promise<Rec
           {result.rows.map((s) => (
             <tr key={s.id}>
               <td>{s.email}</td>
-              <td>{s.grade ?? "—"}</td>
-              <td>{s.teacher ?? "—"}</td>
+              <td>{s.school ?? "—"}</td>
               <td>
                 {STATUS[s.status]}
                 {s.suppression && s.status === "active" && (
@@ -133,7 +127,7 @@ export default async function SubscribersPage(props: { searchParams: Promise<Rec
           ))}
           {result.rows.length === 0 && (
             <tr>
-              <td colSpan={manage ? 6 : 5} className="muted">
+              <td colSpan={manage ? 5 : 4} className="muted">
                 No subscribers match.
               </td>
             </tr>

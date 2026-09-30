@@ -32,18 +32,18 @@ const confirmTokenFromMail = () => {
 
 describe("subscribe + double opt-in", () => {
   it("creates a pending subscriber and emails a confirmation link", async () => {
-    expect(await subscribe(db, { email: " New@Example.com ", grade: "2", teacher: "Rivera" }, { ip: ip() })).toBe(
+    expect(await subscribe(db, { email: " New@Example.com ", school: "Orenda" }, { ip: ip() })).toBe(
       "sent_confirmation",
     );
     const [row] = await db.select().from(subscribers);
-    expect(row).toMatchObject({ email: "new@example.com", grade: "2", teacher: "Rivera", status: "pending", confirmedAt: null });
+    expect(row).toMatchObject({ email: "new@example.com", school: "Orenda", status: "pending", confirmedAt: null });
     expect(mailbox().sent).toHaveLength(1);
     expect(mailbox().sent[0].to).toBe("new@example.com");
     expect(confirmTokenFromMail()).toBe(row.confirmToken);
   });
 
   it("activates only when the confirmation link is used", async () => {
-    await subscribe(db, { email: "p@example.com", grade: "K" }, { ip: ip() });
+    await subscribe(db, { email: "p@example.com", school: "Karigon" }, { ip: ip() });
     expect(await countRecipients(db, null)).toBe(0);
     expect(await confirmSubscription(db, confirmTokenFromMail())).toBe("confirmed");
     const [row] = await db.select().from(subscribers);
@@ -55,13 +55,13 @@ describe("subscribe + double opt-in", () => {
   });
 
   it("rejects expired confirmation tokens", async () => {
-    await subscribe(db, { email: "old@example.com", grade: "K" }, { ip: ip() });
+    await subscribe(db, { email: "old@example.com", school: "Karigon" }, { ip: ip() });
     await db.update(subscribers).set({ consentAt: new Date(Date.now() - CONFIRM_TOKEN_TTL_MS - 1000) });
     expect(await confirmSubscription(db, confirmTokenFromMail())).toBe("invalid");
   });
 
   it("confirm route redirects and activates on POST", async () => {
-    await subscribe(db, { email: "r@example.com", grade: "K" }, { ip: ip() });
+    await subscribe(db, { email: "r@example.com", school: "Karigon" }, { ip: ip() });
     const token = confirmTokenFromMail();
     const res = await confirmRoute(new Request(`https://pta.example.org/api/confirm/${token}`, { method: "POST" }), params(token));
     expect(res.status).toBe(303);
@@ -70,31 +70,31 @@ describe("subscribe + double opt-in", () => {
 
   it("does nothing for already-active subscribers (no enumeration, no spam)", async () => {
     await makeSubscriber(db, { email: "a@example.com" });
-    expect(await subscribe(db, { email: "a@example.com", grade: "K" }, { ip: ip() })).toBe("noop");
+    expect(await subscribe(db, { email: "a@example.com", school: "Karigon" }, { ip: ip() })).toBe("noop");
     expect(mailbox().sent).toHaveLength(0);
   });
 
   it("sends nothing at all to bounced/complained/manual suppressions", async () => {
     await db.insert(suppressions).values({ email: "b@example.com", reason: "bounce", source: "test" });
-    expect(await subscribe(db, { email: "b@example.com", grade: "K" }, { ip: ip() })).toBe("noop");
+    expect(await subscribe(db, { email: "b@example.com", school: "Karigon" }, { ip: ip() })).toBe("noop");
     expect(mailbox().sent).toHaveLength(0);
     expect(await db.select().from(subscribers)).toHaveLength(0);
   });
 
   it("rejects invalid input", async () => {
-    await expect(subscribe(db, { email: "nope", grade: "K" }, { ip: ip() })).rejects.toThrow();
-    await expect(subscribe(db, { email: "x@example.com", grade: "13" as never }, { ip: ip() })).rejects.toThrow();
+    await expect(subscribe(db, { email: "nope", school: "Karigon" }, { ip: ip() })).rejects.toThrow();
+    await expect(subscribe(db, { email: "x@example.com", school: "Hogwarts" as never }, { ip: ip() })).rejects.toThrow();
   });
 
   it("rate-limits per IP and per email", async () => {
     const fixed = "192.0.2.1";
     const results = [];
-    for (let i = 0; i < 12; i++) results.push(await subscribe(db, { email: `x${i}@example.com`, grade: "K" }, { ip: fixed }));
+    for (let i = 0; i < 12; i++) results.push(await subscribe(db, { email: `x${i}@example.com`, school: "Karigon" }, { ip: fixed }));
     expect(results.slice(0, 10).every((r) => r === "sent_confirmation")).toBe(true);
     expect(results.slice(10)).toEqual(["rate_limited", "rate_limited"]);
 
     const per = [];
-    for (let i = 0; i < 4; i++) per.push(await subscribe(db, { email: "same@example.com", grade: "K" }, { ip: ip() }));
+    for (let i = 0; i < 4; i++) per.push(await subscribe(db, { email: "same@example.com", school: "Karigon" }, { ip: ip() }));
     expect(per.at(-1)).toBe("rate_limited");
   });
 });
@@ -110,17 +110,17 @@ describe("subscribe route bot protection", () => {
     );
 
   it("accepts a real submission", async () => {
-    const res = await post({ email: "ok@example.com", grade: "K", formToken: issueFormToken(Date.now() - 5000) });
+    const res = await post({ email: "ok@example.com", school: "Karigon", formToken: issueFormToken(Date.now() - 5000) });
     expect(res.status).toBe(200);
     expect(mailbox().sent).toHaveLength(1);
   });
 
   it("silently drops honeypot, instant, forged and missing form tokens", async () => {
     for (const body of [
-      { email: "bot1@example.com", grade: "K", formToken: issueFormToken(Date.now() - 5000), website: "spam" },
-      { email: "bot2@example.com", grade: "K", formToken: issueFormToken() },
-      { email: "bot3@example.com", grade: "K", formToken: `${Date.now() - 5000}.forged` },
-      { email: "bot4@example.com", grade: "K" },
+      { email: "bot1@example.com", school: "Karigon", formToken: issueFormToken(Date.now() - 5000), website: "spam" },
+      { email: "bot2@example.com", school: "Karigon", formToken: issueFormToken() },
+      { email: "bot3@example.com", school: "Karigon", formToken: `${Date.now() - 5000}.forged` },
+      { email: "bot4@example.com", school: "Karigon" },
     ]) {
       const res = await post(body);
       expect(res.status).toBe(200);
@@ -134,7 +134,7 @@ describe("subscribe route bot protection", () => {
   });
 
   it("returns 400 for bad input", async () => {
-    const res = await post({ email: "nope", grade: "K", formToken: issueFormToken(Date.now() - 5000) });
+    const res = await post({ email: "nope", school: "Karigon", formToken: issueFormToken(Date.now() - 5000) });
     expect(res.status).toBe(400);
   });
 });
@@ -229,7 +229,7 @@ describe("recipient eligibility", () => {
   it("re-subscribing after unsubscribe requires a new confirmation, which lifts only the unsubscribe suppression", async () => {
     const s = await makeSubscriber(db, { email: "back@example.com" });
     await unsubscribeByToken(db, s.unsubscribeToken, "link");
-    expect(await subscribe(db, { email: "back@example.com", grade: "K" }, { ip: ip() })).toBe("sent_confirmation");
+    expect(await subscribe(db, { email: "back@example.com", school: "Karigon" }, { ip: ip() })).toBe("sent_confirmation");
     expect(await listRecipients(db, null)).toEqual([]);
     await confirmSubscription(db, confirmTokenFromMail());
     expect((await listRecipients(db, null)).map((r) => r.email)).toEqual(["back@example.com"]);

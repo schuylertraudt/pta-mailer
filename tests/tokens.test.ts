@@ -24,14 +24,13 @@ describe("email normalization", () => {
 describe("segment rules", () => {
   it.each([
     ["all", { kind: "all" }],
-    ["grade=K", { kind: "grade", value: "K" }],
-    ["teacher=Ms. Rivera", { kind: "teacher", value: "Ms. Rivera" }],
+    ["school=Karigon", { kind: "school", value: "Karigon" }],
     ["committee=Garden Committee", { kind: "committee", value: "Garden Committee" }],
   ] as const)("parses %s", (rule, parsed) => {
     expect(parseSegmentRule(rule)).toEqual(parsed);
     expect(formatSegmentRule(parseSegmentRule(rule))).toBe(rule);
   });
-  it.each(["", "grade", "grade=", "=K", "school=X"])("rejects %j", (rule) => {
+  it.each(["", "school", "school=", "=K", "grade=K", "teacher=X"])("rejects %j", (rule) => {
     expect(() => parseSegmentRule(rule)).toThrow();
   });
 });

@@ -3,7 +3,7 @@
 import Script from "next/script";
 import { useState } from "react";
 
-export default function SubscribeForm(props: { formToken: string; grades: string[]; turnstileSiteKey?: string }) {
+export default function SubscribeForm(props: { formToken: string; schools: string[]; turnstileSiteKey?: string }) {
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -39,21 +39,17 @@ export default function SubscribeForm(props: { formToken: string; grades: string
     <form onSubmit={onSubmit} noValidate={false}>
       <label htmlFor="email">Email</label>
       <input id="email" name="email" type="email" autoComplete="email" inputMode="email" required />
-      <label htmlFor="grade">Grade</label>
-      <select id="grade" name="grade" required defaultValue="">
+      <label htmlFor="school">Home elementary school</label>
+      <select id="school" name="school" required defaultValue="">
         <option value="" disabled>
-          Choose a grade
+          Choose a school
         </option>
-        {props.grades.map((g) => (
-          <option key={g} value={g}>
-            {g === "K" ? "Kindergarten" : g === "TK" ? "Transitional K" : `Grade ${g}`}
+        {props.schools.map((name) => (
+          <option key={name} value={name}>
+            {name}
           </option>
         ))}
       </select>
-      <label htmlFor="teacher">
-        Teacher <span className="muted">(optional)</span>
-      </label>
-      <input id="teacher" name="teacher" type="text" maxLength={80} autoComplete="off" />
       {/* Honeypot: hidden from people, filled by naive bots. */}
       <div className="hp" aria-hidden="true">
         <label htmlFor="website">Website</label>

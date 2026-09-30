@@ -9,7 +9,7 @@ import {
   subscribers,
   suppressions,
 } from "./schema";
-import { GRADES } from "@/lib/grades";
+import { SCHOOLS } from "@/lib/schools";
 import { generateToken } from "@/lib/tokens";
 
 export const DEFAULT_BRAND = {
@@ -26,10 +26,6 @@ export const SEED_OFFICERS = [
   { email: "sender@example.org", name: "Casey Sender", role: "sender" },
   { email: "drafter@example.org", name: "Drew Drafter", role: "drafter" },
 ] as const;
-
-const TEACHERS: Record<string, string[]> = Object.fromEntries(
-  GRADES.map((g, i) => [g, [`Teacher ${String.fromCharCode(65 + i * 2)}`, `Teacher ${String.fromCharCode(66 + i * 2)}`]]),
-);
 
 export const SEED_COMMITTEES = ["Garden Committee", "Fundraising Committee"] as const;
 
@@ -60,14 +56,14 @@ export async function seed(db: Db, opts: { subscribers?: number } = {}) {
       .insert(segments)
       .values([
         { name: "All families", rule: "all" },
-        ...GRADES.map((g) => ({ name: `Grade ${g}`, rule: `grade=${g}` })),
+        ...SCHOOLS.map((s) => ({ name: s, rule: `school=${s}` })),
         ...SEED_COMMITTEES.map((c) => ({ name: c, rule: `committee=${c}` })),
       ])
       .onConflictDoNothing({ target: segments.name });
 
     const now = Date.now();
     const rows = Array.from({ length: subscriberCount }, (_, i) => {
-      const grade = GRADES[i % GRADES.length];
+      const school = SCHOOLS[i % SCHOOLS.length];
       // ~80% active, 10% pending, 5% unsubscribed, 5% bounced.
       const roll = i % 20;
       const status =
@@ -75,8 +71,7 @@ export async function seed(db: Db, opts: { subscribers?: number } = {}) {
       const consentAt = new Date(now - faker.number.int({ min: 1, max: 365 }) * 86_400_000);
       return {
         email: `family${i + 1}.${faker.string.alphanumeric(6).toLowerCase()}@example.com`,
-        grade,
-        teacher: faker.helpers.arrayElement(TEACHERS[grade]),
+        school,
         status,
         consentAt,
         confirmedAt: status === "pending" ? null : new Date(consentAt.getTime() + 3_600_000),

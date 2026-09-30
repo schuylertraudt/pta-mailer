@@ -29,6 +29,20 @@
       "when": 1790808664169,
       "tag": "0003_subscriber_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790810057760,
+      "tag": "0004_subscriber_school",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790810058886,
+      "tag": "0005_drop_grade_teacher",
+      "breakpoints": true
     }
   ]
 }

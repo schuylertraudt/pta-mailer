@@ -20,7 +20,7 @@ export async function makeSubscriber(
     .insert(subscribers)
     .values({
       email: `sub${n}.${Date.now()}@example.com`,
-      grade: "K",
+      school: "Karigon",
       status: "active",
       consentAt: new Date(),
       confirmedAt: new Date(),

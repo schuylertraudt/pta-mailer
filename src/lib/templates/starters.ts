@@ -54,7 +54,7 @@ export const STARTER_TEMPLATES: { id: string; name: string; body: Doc }[] = [
         spacer(),
         p(t("One or two sentences on what the event is and why families will love it.")),
         h(3, "What to know"),
-        bullets("Who: [All grades / families welcome]", "Cost: [Free / $X]", "Bring: [Anything families need]"),
+        bullets("Who: [Which schools / all families welcome]", "Cost: [Free / $X]", "Bring: [Anything families need]"),
         button("RSVP now", "accent"),
         p(t("Can't make it? We'd still love your help. Reply to this email to volunteer.", "italic")),
       ],

@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { Db, DbOrTx } from "@/db";
 import { subscribers, suppressions } from "@/db/schema";
 import { emailSchema } from "@/lib/email";
-import { GRADES } from "@/lib/grades";
+import { SCHOOLS } from "@/lib/schools";
 import { getEmailProvider } from "@/lib/mail/provider";
 import { simpleEmail } from "@/lib/mail/transactional";
 import { hitRateLimit } from "@/lib/rate-limit";
@@ -14,13 +14,7 @@ export const CONFIRM_TOKEN_TTL_MS = 7 * 24 * 3600_000;
 
 export const subscribeInput = z.object({
   email: emailSchema,
-  grade: z.enum(GRADES),
-  teacher: z
-    .string()
-    .trim()
-    .max(80)
-    .optional()
-    .transform((v) => v || null),
+  school: z.enum(SCHOOLS),
 });
 export type SubscribeInput = z.input<typeof subscribeInput>;
 
@@ -54,8 +48,7 @@ export async function subscribe(db: Db, raw: SubscribeInput, meta: { ip: string 
   if (!existing) {
     await db.insert(subscribers).values({
       email: input.email,
-      grade: input.grade,
-      teacher: input.teacher,
+      school: input.school,
       status: "pending",
       consentAt: now,
       confirmToken: token,
@@ -65,7 +58,7 @@ export async function subscribe(db: Db, raw: SubscribeInput, meta: { ip: string 
     // Re-subscribing after an unsubscribe requires a fresh double opt-in.
     await db
       .update(subscribers)
-      .set({ status: "pending", grade: input.grade, teacher: input.teacher, consentAt: now, confirmToken: token, confirmedAt: null })
+      .set({ status: "pending", school: input.school, consentAt: now, confirmToken: token, confirmedAt: null })
       .where(eq(subscribers.id, existing.id));
   } else {
     // active, bounced, complained: nothing to do.

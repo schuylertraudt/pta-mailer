@@ -57,19 +57,19 @@ describe("permissions", () => {
 });
 
 describe("search", () => {
-  it("filters by email substring, status, grade and teacher, and treats % and _ literally", async () => {
-    await makeSubscriber(db, { email: "rivera.family@example.com", grade: "K", teacher: "Ms. Rivera" });
-    await makeSubscriber(db, { email: "chen@example.com", grade: "2", teacher: "Mr. Chen" });
-    await makeSubscriber(db, { email: "pending@example.com", grade: "K", status: "pending", confirmedAt: null });
-    await makeSubscriber(db, { email: "under_score@example.com", grade: "3" });
+  it("filters by email substring, status and school, and treats % and _ literally", async () => {
+    await makeSubscriber(db, { email: "rivera.family@example.com", school: "Karigon" });
+    await makeSubscriber(db, { email: "chen@example.com", school: "Orenda" });
+    await makeSubscriber(db, { email: "pending@example.com", school: "Karigon", status: "pending", confirmedAt: null });
+    await makeSubscriber(db, { email: "under_score@example.com", school: "Skano" });
     const { headers } = await as("sender");
     const emails = async (q: string) =>
       ((await (await listRoute(get(`/api/subscribers?${q}`, headers), noParams)).json()).rows as { email: string }[]).map((r) => r.email).sort();
 
     expect(await emails("q=RIVERA")).toEqual(["rivera.family@example.com"]);
-    expect(await emails("grade=K")).toEqual(["pending@example.com", "rivera.family@example.com"]);
-    expect(await emails("grade=K&status=active")).toEqual(["rivera.family@example.com"]);
-    expect(await emails("teacher=chen")).toEqual(["chen@example.com"]);
+    expect(await emails("school=Karigon")).toEqual(["pending@example.com", "rivera.family@example.com"]);
+    expect(await emails("school=Karigon&status=active")).toEqual(["rivera.family@example.com"]);
+    expect(await emails("school=Orenda")).toEqual(["chen@example.com"]);
     expect(await emails("q=_")).toEqual(["under_score@example.com"]);
     expect(await emails("q=%25")).toEqual([]);
   });
@@ -112,7 +112,7 @@ describe("delete", () => {
     expect(JSON.stringify(audit.details)).not.toContain("leaving@example.com");
 
     // Suppressed: re-subscribing sends nothing.
-    expect(await subscribe(db, { email: "leaving@example.com", grade: "K" }, { ip: "10.1.1.1" })).toBe("noop");
+    expect(await subscribe(db, { email: "leaving@example.com", school: "Karigon" }, { ip: "10.1.1.1" })).toBe("noop");
     expect(mailbox().sent).toHaveLength(0);
     expect((await del(s.id, admin.headers)).status).toBe(404);
   });
@@ -122,14 +122,15 @@ describe("delete", () => {
     const admin = await as("admin");
     await del(s.id, admin.headers, { suppress: false });
     expect(await db.select().from(suppressions)).toHaveLength(0);
-    expect(await subscribe(db, { email: "later@example.com", grade: "K" }, { ip: "10.1.1.2" })).toBe("sent_confirmation");
+    expect(await subscribe(db, { email: "later@example.com", school: "Karigon" }, { ip: "10.1.1.2" })).toBe("sent_confirmation");
   });
 });
 
 describe("export", () => {
   it("returns filtered CSV without tokens, defuses formulas, and audits", async () => {
-    await makeSubscriber(db, { email: "a@example.com", grade: "K", teacher: "=HYPERLINK(\"http://evil\")" });
-    const b = await makeSubscriber(db, { email: "b@example.com", grade: "2", teacher: "Chen, Mr." });
+    // School is validated on the public form; the export still defends against odd values written any other way.
+    await makeSubscriber(db, { email: "a@example.com", school: "=HYPERLINK(\"http://evil\")" });
+    const b = await makeSubscriber(db, { email: "b@example.com", school: "Chango, East" });
     await db.insert(suppressions).values({ email: b.email, reason: "bounce" });
     const admin = await as("admin");
 
@@ -138,18 +139,18 @@ describe("export", () => {
     expect(res.headers.get("content-disposition")).toMatch(/attachment; filename="pta-subscribers-\d{4}-\d{2}-\d{2}\.csv"/);
     const csv = await res.text();
     const lines = csv.trim().split("\r\n");
-    expect(lines[0]).toBe("email,grade,teacher,status,on_do_not_mail_list,consent_at,confirmed_at,created_at");
-    expect(lines[1]).toMatch(/^a@example\.com,K,"'=HYPERLINK\(""http:\/\/evil""\)",active,no,/);
-    expect(lines[2]).toMatch(/^b@example\.com,2,"Chen, Mr\.",active,yes,/);
+    expect(lines[0]).toBe("email,school,status,on_do_not_mail_list,consent_at,confirmed_at,created_at");
+    expect(lines[1]).toMatch(/^a@example\.com,"'=HYPERLINK\(""http:\/\/evil""\)",active,no,/);
+    expect(lines[2]).toMatch(/^b@example\.com,"Chango, East",active,yes,/);
     expect(csv).not.toContain(b.unsubscribeToken);
 
-    const filtered = await (await exportRoute(get("/api/subscribers/export?grade=2", admin.headers), noParams)).text();
+    const filtered = await (await exportRoute(get("/api/subscribers/export?school=Chango%2C%20East", admin.headers), noParams)).text();
     expect(filtered.trim().split("\r\n")).toHaveLength(2);
 
     const audits = await db.select().from(dataAudit);
     expect(audits.map((a) => a.details)).toEqual([
-      { count: 2, filter: { q: "", status: "", grade: "", teacher: "" } },
-      { count: 1, filter: { q: "", status: "", grade: "2", teacher: "" } },
+      { count: 2, filter: { q: "", status: "", school: "" } },
+      { count: 1, filter: { q: "", status: "", school: "Chango, East" } },
     ]);
   });
 

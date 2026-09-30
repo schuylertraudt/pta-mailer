@@ -27,14 +27,14 @@ export async function POST(req: Request) {
   }
 
   try {
-    const outcome = await subscribe(getDb(), { email: body.email, grade: body.grade as never, teacher: body.teacher }, { ip });
+    const outcome = await subscribe(getDb(), { email: body.email, school: body.school as never }, { ip });
     if (outcome === "rate_limited") {
       return NextResponse.json({ error: "Too many attempts. Please try again later." }, { status: 429 });
     }
     return NextResponse.json({ ok: true, message: GENERIC_OK });
   } catch (e) {
     if (e instanceof ZodError) {
-      return NextResponse.json({ error: "Please enter a valid email and choose a grade." }, { status: 400 });
+      return NextResponse.json({ error: "Please enter a valid email and choose your school." }, { status: 400 });
     }
     throw e;
   }

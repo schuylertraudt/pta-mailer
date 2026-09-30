@@ -23,10 +23,8 @@ async function segmentWhere(db: DbOrTx, segmentId: string | null): Promise<SQL |
   switch (rule.kind) {
     case "all":
       return undefined;
-    case "grade":
-      return eq(subscribers.grade, rule.value);
-    case "teacher":
-      return eq(subscribers.teacher, rule.value);
+    case "school":
+      return eq(subscribers.school, rule.value);
     case "committee":
       return exists(
         db
