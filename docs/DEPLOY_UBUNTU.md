@@ -30,7 +30,8 @@ Commands are run as a user with `sudo` rights, over SSH. Lines starting with
   (building the app needs about that much; step 2 adds swap if you have less)
   and about 5 GB of free disk.
 - Access to the DNS settings for your domain.
-- Access to the code on GitHub (`schuylertraudt/pta-mailer`).
+- Nothing on GitHub: the code (`schuylertraudt/pta-mailer`) is public, so the
+  server downloads it directly.
 
 **About the code branch:** the app is currently on the branch
 `ccr-6d2f924f-jf1u7k`. The cleanest setup is to merge it into `main` on GitHub
@@ -120,24 +121,18 @@ sudo chmod 755 /var/lib/pta-mailer /var/lib/pta-mailer/media
 
 ## 6. Get the code
 
-The repository is private, so give the server a read-only "deploy key":
+The repository is public, so the server can download it without any GitHub
+login or key:
 
 ```bash
-sudo -u pta -H mkdir -p /opt/pta-mailer/.ssh
-sudo -u pta -H ssh-keygen -t ed25519 -N "" -C "pta-mailer server" -f /opt/pta-mailer/.ssh/id_ed25519
-sudo -u pta -H bash -c 'ssh-keyscan github.com >> /opt/pta-mailer/.ssh/known_hosts'
-sudo cat /opt/pta-mailer/.ssh/id_ed25519.pub
+sudo -u pta -H git clone --branch main https://github.com/schuylertraudt/pta-mailer.git /opt/pta-mailer/app
 ```
 
-On GitHub: the repository → **Settings → Deploy keys → Add deploy key**. Title
-`pta-mailer server`, paste the line printed above, leave **Allow write access**
-unticked, **Add key**.
+The server can only download; it can't change anything on GitHub.
 
-Then clone:
-
-```bash
-sudo -u pta -H git clone --branch main git@github.com:schuylertraudt/pta-mailer.git /opt/pta-mailer/app
-```
+Because the code is public, never put passwords or keys in the repository.
+They belong only in `/etc/pta-mailer.env` on the server (step 7), which is
+not part of the code.
 
 ## 7. Write the settings file
 
@@ -388,4 +383,4 @@ applied yet.
 | No padlock / certificate error | DNS doesn't point at the server yet (step 1), or ports 80/443 are blocked (step 2). `sudo journalctl -u caddy -n 50` says which |
 | Build stops with "JavaScript heap out of memory" or "Killed" | Not enough RAM: add swap (step 2) and build again |
 | Images in newsletters don't show | `STORAGE_PUBLIC_BASE_URL` must be `https://<your domain>/media`, and the Caddy `/media/*` block must be present |
-| `git pull` says "Permission denied (publickey)" | The deploy key was removed from GitHub; add it again (step 6) |
+| `git pull` asks for a username or says "Repository not found" | The repository was made private. Make it public again, or ask a developer to set up read access for the server |
