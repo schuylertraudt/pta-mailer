@@ -12,7 +12,7 @@ export const POST = withOfficer<{ id: string }>("compose", async (req, _o, { id 
     const body = (await req.json().catch(() => ({}))) as { dark?: boolean };
     const c = await getCampaign(db, id);
     const r = await renderCampaign(db, c, { forceDark: !!body.dark });
-    const recipients = await countRecipients(db, c.segmentId);
+    const recipients = await countRecipients(db, c.segmentIds);
     return json({ html: r.html.replaceAll("__UNSUBSCRIBE_TOKEN__", "preview"), text: r.text, checks: r.checks, bytes: r.bytes, recipients });
   } catch (e) {
     return toResponse(e);

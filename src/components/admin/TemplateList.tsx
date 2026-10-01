@@ -44,7 +44,7 @@ export default function TemplateList(props: { templates: { id: string; name: str
               <td className="muted">{new Date(t.updatedAt).toLocaleDateString()}</td>
               <td className="row" style={{ justifyContent: "flex-end" }}>
                 <button className="small" onClick={() => use(t.id)}>
-                  New newsletter from this
+                  New message from this
                 </button>
                 {!t.starter && (
                   <button className="small danger" onClick={() => remove(t.id, t.name)}>

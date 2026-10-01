@@ -3,7 +3,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 // Route handlers schedule queue work with next/server's after(); outside a request we skip it.
 vi.mock("next/server", async (orig) => ({ ...(await orig<typeof import("next/server")>()), after: () => {} }));
 import { eq } from "drizzle-orm";
-import { campaigns, sends } from "@/db/schema";
+import { campaigns, segments, sends } from "@/db/schema";
 import { POST as createRoute } from "../app/api/campaigns/route";
 import { PATCH as patchRoute } from "../app/api/campaigns/[id]/route";
 import { POST as previewRoute } from "../app/api/campaigns/[id]/preview/route";
@@ -11,6 +11,7 @@ import { POST as testRoute } from "../app/api/campaigns/[id]/test/route";
 import { POST as submitRoute } from "../app/api/campaigns/[id]/submit/route";
 import { POST as approveRoute } from "../app/api/campaigns/[id]/approve/route";
 import { POST as sendRoute } from "../app/api/campaigns/[id]/send/route";
+import { GET as recipientsRoute } from "../app/api/campaigns/[id]/recipients/route";
 import { PUT as brandRoute } from "../app/api/brand/route";
 import { POST as templateRoute } from "../app/api/templates/route";
 import { enqueueCampaign } from "@/lib/queue/enqueue";
@@ -18,7 +19,7 @@ import { ensureStarterTemplates, listTemplates } from "@/lib/templates/service";
 import { STARTER_TEMPLATES } from "@/lib/templates/starters";
 import { resetDb, testDb } from "./helpers/db";
 import { mailbox, makeOfficer, makeSubscriber, sessionFor } from "./helpers/factories";
-import { makeCampaign, realBrand } from "./helpers/campaign";
+import { allAudience, makeCampaign, realBrand } from "./helpers/campaign";
 import { longText } from "./helpers/docs";
 
 const { db, pool } = testDb();
@@ -65,7 +66,7 @@ describe("approval workflow and role enforcement", () => {
 
     const created = await (await call(createRoute, dh, undefined, { templateId: null })).json();
     const id = created.campaign.id;
-    expect((await call(patchRoute, dh, id, { subject: "Hello", bodyJson: longText(1000) }, "PATCH")).status).toBe(200);
+    expect((await call(patchRoute, dh, id, { subject: "Hello", bodyJson: longText(1000), segmentIds: [await allAudience(db)] }, "PATCH")).status).toBe(200);
     expect((await call(submitRoute, dh, id)).status).toBe(200);
     expect((await call(approveRoute, sh, id)).status).toBe(200);
     const [approved] = await db.select().from(campaigns).where(eq(campaigns.id, id));
@@ -121,7 +122,7 @@ describe("send guards", () => {
     expect(row.status).toBe("draft");
   });
 
-  it("blocks send with no subject, no recipients, or no mailing address", async () => {
+  it("blocks send with no subject, no recipients, no mailing address, or no audience", async () => {
     const s = await makeOfficer(db, "sender");
     const noSubject = await makeCampaign(db, s.id, { subject: "" });
     await makeSubscriber(db);
@@ -138,6 +139,46 @@ describe("send guards", () => {
     await makeSubscriber(db);
     const c3 = await makeCampaign(db, s3.id);
     await expect(enqueueCampaign(db, c3.id, s3.id)).rejects.toThrow("mailing address");
+
+    await realBrand(db);
+    const nobody = await makeCampaign(db, s3.id, { segmentIds: [] });
+    await expect(enqueueCampaign(db, nobody.id, s3.id)).rejects.toThrow("Choose who this message goes to");
+  });
+});
+
+describe("recipients and sender name", () => {
+  it("saves several audiences and a cleaned sender name; rejects unknown audiences", async () => {
+    const d = await makeOfficer(db, "drafter");
+    const h = (await sessionFor(db, d.id)).headers;
+    const [k, o] = await db
+      .insert(segments)
+      .values([
+        { name: "Karigon", rule: "school=Karigon" },
+        { name: "Orenda", rule: "school=Orenda" },
+      ])
+      .returning();
+    const c = await makeCampaign(db, d.id, { segmentIds: [] });
+    const res = await call(patchRoute, h, c.id, { segmentIds: [k.id, o.id, k.id], fromName: '  Karigon "PTA" <x@evil.example>\r\nBcc: a@b.c ' }, "PATCH");
+    expect(res.status).toBe(200);
+    const [row] = await db.select().from(campaigns).where(eq(campaigns.id, c.id));
+    expect(row.segmentIds).toEqual([k.id, o.id]);
+    expect(row.fromName).toBe("Karigon PTA x@evil.example Bcc: a@b.c");
+    const bad = await call(patchRoute, h, c.id, { segmentIds: ["00000000-0000-4000-8000-000000000000"] }, "PATCH");
+    expect(bad.status).toBe(400);
+  });
+
+  it("lists the selected recipients for team members who may view subscribers", async () => {
+    const d = await makeOfficer(db, "drafter");
+    const s = await makeOfficer(db, "sender");
+    const k = await makeSubscriber(db, { school: "Karigon" });
+    await makeSubscriber(db, { school: "Orenda" });
+    const [seg] = await db.insert(segments).values({ name: "Karigon", rule: "school=Karigon" }).returning();
+    const c = await makeCampaign(db, d.id, { segmentIds: [seg.id] });
+    const get = (h: Record<string, string>) => call(recipientsRoute, h, c.id, undefined, "GET");
+    expect((await get((await sessionFor(db, d.id)).headers)).status).toBe(403);
+    const body = await (await get((await sessionFor(db, s.id)).headers)).json();
+    expect(body.total).toBe(1);
+    expect(body.recipients).toEqual([{ email: k.email, school: "Karigon" }]);
   });
 });
 
@@ -169,6 +210,10 @@ describe("preview, test send and templates", () => {
     expect(m.html).toContain("<html");
     expect(m.text.length).toBeGreaterThan(10);
     expect(m.from).toBe("Example PTA <news@pta.example.org>");
+
+    await db.update(campaigns).set({ fromName: "Karigon PTA" }).where(eq(campaigns.id, c.id));
+    await call(testRoute, (await sessionFor(db, d.id)).headers, c.id);
+    expect(mailbox().sent[1].from).toBe('"Karigon PTA" <news@pta.example.org>');
   });
 
   it("ships 3 starter templates and can save a campaign as a template", async () => {

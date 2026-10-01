@@ -1,4 +1,4 @@
-import { and, count, eq, exists, isNotNull, notExists, sql, type SQL } from "drizzle-orm";
+import { and, count, eq, exists, inArray, isNotNull, notExists, or, sql, type SQL } from "drizzle-orm";
 import type { DbOrTx } from "@/db";
 import { segments, subscriberSegments, subscribers, suppressions } from "@/db/schema";
 import { parseSegmentRule } from "@/lib/segment-rule";
@@ -15,10 +15,7 @@ export function eligibleRecipientWhere(): SQL {
   )!;
 }
 
-async function segmentWhere(db: DbOrTx, segmentId: string | null): Promise<SQL | undefined> {
-  if (!segmentId) return undefined;
-  const [seg] = await db.select().from(segments).where(eq(segments.id, segmentId));
-  if (!seg) throw new Error(`Segment ${segmentId} not found`);
+async function segmentWhere(db: DbOrTx, seg: typeof segments.$inferSelect): Promise<SQL | undefined> {
   const rule = parseSegmentRule(seg.rule);
   switch (rule.kind) {
     case "all":
@@ -35,18 +32,43 @@ async function segmentWhere(db: DbOrTx, segmentId: string | null): Promise<SQL |
   }
 }
 
-export async function recipientFilter(db: DbOrTx, segmentId: string | null): Promise<SQL> {
-  return and(eligibleRecipientWhere(), await segmentWhere(db, segmentId))!;
+/**
+ * Anyone in any of the audiences. `null` means no audience filter (every
+ * eligible subscriber); an empty list means nobody.
+ */
+async function audienceWhere(db: DbOrTx, segmentIds: string[] | null): Promise<SQL | undefined> {
+  if (segmentIds === null) return undefined;
+  const ids = [...new Set(segmentIds)];
+  if (!ids.length) return sql`false`;
+  const rows = await db.select().from(segments).where(inArray(segments.id, ids));
+  if (rows.length !== ids.length) throw new Error("Audience not found");
+  const parts = await Promise.all(rows.map((seg) => segmentWhere(db, seg)));
+  if (parts.some((p) => p === undefined)) return undefined;
+  return or(...(parts as SQL[]));
 }
 
-export async function countRecipients(db: DbOrTx, segmentId: string | null): Promise<number> {
-  const [{ n }] = await db.select({ n: count() }).from(subscribers).where(await recipientFilter(db, segmentId));
+export async function recipientFilter(db: DbOrTx, segmentIds: string[] | null): Promise<SQL> {
+  return and(eligibleRecipientWhere(), await audienceWhere(db, segmentIds))!;
+}
+
+export async function countRecipients(db: DbOrTx, segmentIds: string[] | null): Promise<number> {
+  const [{ n }] = await db.select({ n: count() }).from(subscribers).where(await recipientFilter(db, segmentIds));
   return n;
 }
 
-export async function listRecipients(db: DbOrTx, segmentId: string | null) {
+export async function listRecipients(db: DbOrTx, segmentIds: string[] | null) {
   return db
     .select({ id: subscribers.id, email: subscribers.email })
     .from(subscribers)
-    .where(await recipientFilter(db, segmentId));
+    .where(await recipientFilter(db, segmentIds));
+}
+
+/** First `limit` recipients by email, for "View selected recipients". */
+export async function sampleRecipients(db: DbOrTx, segmentIds: string[], limit: number) {
+  return db
+    .select({ email: subscribers.email, school: subscribers.school })
+    .from(subscribers)
+    .where(await recipientFilter(db, segmentIds))
+    .orderBy(subscribers.email)
+    .limit(limit);
 }

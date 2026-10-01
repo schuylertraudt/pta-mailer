@@ -58,8 +58,69 @@ nav.admin .spacer { flex: 1; }
 .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border); }
 
 /* Composer */
-@media (max-width: 1000px) { .composer-grid { grid-template-columns: minmax(0, 1fr) !important; } }
-.editor .ProseMirror { min-height: 420px; padding: 16px; outline: none; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; }
+.composer { display: flex; flex-direction: column; gap: 24px; padding-bottom: 48px; }
+.composer > p { margin: 0; }
+.crumbs { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--fg); margin-bottom: -16px; min-width: 0; }
+.crumbs a { text-decoration: none; }
+.crumbs span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.page-head h1 { margin: 0; font-size: 28px; line-height: 1.25; overflow-wrap: anywhere; }
+.page-actions { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+button.link-btn { background: none; border: none; padding: 4px 0; color: var(--primary); font-size: 16px; }
+button.link-btn:hover:not(:disabled) { text-decoration: underline; }
+.split { position: relative; display: inline-flex; }
+.split > button:first-child { border-radius: 8px 0 0 8px; }
+.split > .split-toggle { border-radius: 0 8px 8px 0; border-left: 1px solid rgba(255, 255, 255, 0.35); padding: 10px 12px; display: inline-flex; align-items: center; }
+.menu { position: absolute; right: 0; top: calc(100% + 6px); min-width: 220px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); padding: 6px; z-index: 20; display: flex; flex-direction: column; }
+.menu button, .tb-menu button { background: none; border: none; color: var(--fg); font-weight: 500; text-align: left; padding: 8px 12px; border-radius: 6px; }
+.menu button:hover:not(:disabled), .tb-menu button:hover { background: var(--bg); }
+.menu button.danger-text { color: var(--danger); }
+.panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 8px 28px 28px; }
+.panel.row { padding: 16px 28px; }
+.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); padding: 16px 0; margin-bottom: 8px; flex-wrap: wrap; }
+.panel-head h2 { margin: 0; font-size: 22px; }
+.panel label, .panel .field-label { display: block; font-weight: 500; margin: 20px 0 8px; }
+.panel .label-row { display: flex; justify-content: space-between; align-items: center; }
+.panel input:not([type="checkbox"]):not([type="range"]), .panel select { background: var(--bg); border-color: var(--border); padding: 12px 14px; border-radius: 8px; }
+.panel label.check { display: flex; gap: 8px; align-items: center; font-weight: 400; margin-top: 20px; }
+.panel .hint { font-size: 13px; margin: 8px 0 0; }
+.field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; }
+@media (max-width: 760px) { .field-grid { grid-template-columns: minmax(0, 1fr); } .panel { padding: 4px 16px 20px; } .page-actions { gap: 12px; } }
+.combo { position: relative; }
+.combo-box { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 48px; padding: 6px 40px 6px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; cursor: text; position: relative; }
+.combo-box:focus-within { outline: 2px solid var(--primary); outline-offset: -1px; }
+.panel .combo-box input { flex: 1; min-width: 160px; border: none; background: transparent; padding: 6px; outline: none; }
+.combo-caret { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); display: flex; }
+.chip { display: inline-flex; align-items: center; gap: 4px; background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 3px 6px 3px 12px; font-size: 14px; }
+.chip button { background: none; border: none; padding: 2px; color: var(--muted); display: inline-flex; border-radius: 999px; }
+.chip button:hover { color: var(--fg); background: var(--bg); }
+.combo-list { position: absolute; left: 0; right: 0; top: calc(100% + 4px); margin: 0; padding: 6px; list-style: none; background: var(--card); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); max-height: 320px; overflow-y: auto; z-index: 20; }
+.combo-list li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; cursor: pointer; }
+.combo-list li > span:nth-child(2) { flex: 1; }
+.combo-list li.active { background: var(--bg); }
+.combo-list li.empty { cursor: default; }
+.combo.disabled .combo-box { cursor: default; opacity: 0.7; }
+.editor-box { border: 1px solid var(--border); border-radius: 8px; overflow: visible; background: var(--card); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--card); z-index: 3; border-radius: 8px 8px 0 0; }
+.tb-group { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; }
+.tb-group > * + * { border-left: 1px solid var(--border); }
+.tb-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 30px; height: 30px; padding: 0 6px; background: var(--card); color: var(--fg); border: none; border-radius: 0; font-weight: 500; font-size: 14px; }
+.tb-group > :first-child, .tb-group > :first-child .tb-btn { border-radius: 5px 0 0 5px; }
+.tb-group > :last-child, .tb-group > :last-child .tb-btn { border-radius: 0 5px 5px 0; }
+.tb-group > :only-child, .tb-group > :only-child .tb-btn { border-radius: 5px; }
+.tb-btn:hover:not(:disabled) { background: var(--bg); }
+.tb-btn.on { background: var(--primary); color: var(--primary-fg); }
+.tb-pop { position: relative; display: inline-flex; }
+.tb-menu { position: absolute; top: calc(100% + 4px); left: 0; background: var(--card); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); padding: 6px; display: flex; flex-direction: column; min-width: 150px; z-index: 5; }
+.tb-menu button { display: flex; align-items: center; gap: 8px; }
+.swatch { display: inline-block; width: 14px; height: 14px; border-radius: 999px; border: 1px solid var(--border); }
+.editor .ProseMirror p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: var(--muted); float: left; height: 0; pointer-events: none; }
+.block-panel { border: 1px solid var(--border); border-radius: 8px; padding: 4px 16px 16px; margin-top: 12px; }
+.block-panel strong { display: block; margin-top: 12px; }
+.dropzone { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 28px 16px; border: 1.5px dashed var(--border); border-radius: 8px; text-align: center; cursor: pointer; font-size: 14px; }
+.dropzone:hover, .dropzone.over, .dropzone:focus-visible { border-color: var(--primary); background: var(--bg); }
+.dropzone-icon { color: var(--primary); display: flex; }
+.editor .ProseMirror { min-height: 320px; padding: 16px; outline: none; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; }
 .editor .ProseMirror h1 { font-size: 28px; line-height: 34px; margin: 0 0 12px; }
 .editor .ProseMirror h2 { font-size: 22px; line-height: 28px; margin: 0 0 12px; }
 .editor .ProseMirror h3 { font-size: 18px; line-height: 24px; margin: 0 0 12px; }

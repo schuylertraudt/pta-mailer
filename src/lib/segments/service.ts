@@ -21,21 +21,22 @@ export const segmentInput = z.object({
 
 export async function listSegmentsWithCounts(db: DbOrTx) {
   const rows = await db.select().from(segments).orderBy(segments.name);
-  return Promise.all(rows.map(async (s) => ({ ...s, recipients: await countRecipients(db, s.id) })));
+  return Promise.all(rows.map(async (s) => ({ ...s, recipients: await countRecipients(db, [s.id]) })));
 }
 
+export const ALL_SUBSCRIBERS = "All subscribers";
+
 /**
- * One audience per school, so each school can be picked in the composer from
- * day one. Idempotent; skips a school if any audience already has its rule or
- * its name.
+ * "All subscribers" plus one audience per school, so they can be picked in the
+ * composer from day one. Idempotent; skips one if any audience already has its
+ * rule or its name.
  */
-export async function ensureSchoolSegments(db: DbOrTx) {
-  for (const school of SCHOOLS) {
-    const rule = `school=${school}`;
+export async function ensureDefaultSegments(db: DbOrTx) {
+  for (const [name, rule] of [[ALL_SUBSCRIBERS, "all"], ...SCHOOLS.map((s) => [s, `school=${s}`])]) {
     await db.execute(sql`
       insert into ${segments} (name, rule)
-      select ${school}, ${rule}
-      where not exists (select 1 from ${segments} where rule = ${rule} or name = ${school})`);
+      select ${name}, ${rule}
+      where not exists (select 1 from ${segments} where rule = ${rule} or name = ${name})`);
   }
 }
 

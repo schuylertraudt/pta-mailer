@@ -4,14 +4,14 @@ Two one-time setups connect the app to outside services:
 
 - **Google** lets committee members and coordinators log in with their Google
   account. It is used for identity only (name and email), never Gmail access.
-- **Amazon SES** sends the newsletters and confirmation emails, and reports
+- **Amazon SES** sends the messages and confirmation emails, and reports
   bounces and spam complaints back to the app.
 
 Addresses used in this guide:
 
 | Address | What it is |
 | --- | --- |
-| `mail.atreapta.com` | Where the app runs, and the domain newsletters are sent from (`news@mail.atreapta.com`) |
+| `mail.atreapta.com` | Where the app runs, and the domain messages are sent from (`news@mail.atreapta.com`) |
 | `atreapta.com` | The PTA's own domain |
 | `pta@atreapta.com`, `tech@atreapta.com` | Examples of PTA role mailboxes. Use real ones |
 
@@ -38,7 +38,7 @@ approval), so start those early.
 2. **Start Amazon's slow parts:** 2.1 and 2.2 (DNS can take up to 72 hours to
    verify), then 2.6, the production-access request (Amazon reviews the website
    you name, so it helps that it's live).
-3. **Google, all of Part 1.** After 1.6 you can log in and build newsletters.
+3. **Google, all of Part 1.** After 1.6 you can log in and build messages.
 4. **Finish Amazon:** 2.3, 2.4, 2.5, 2.8, set the 2.9 variables and restart,
    then 2.7 (connect the topic; the app must be live with `SNS_TOPIC_ARNS` set),
    then 2.10.
@@ -126,7 +126,7 @@ Replace each `<...>` completely, angle brackets included.
 
 1. Restart the app so the new settings take effect.
 2. The person in `BOOTSTRAP_ADMIN_EMAIL` opens the site → **Login** →
-   **Sign in with Google**. They land on the Newsletters page as admin.
+   **Sign in with Google**. They land on the Messages page as admin.
 3. Right away, open **Team** and add a **second admin**. The app requires two
    active admins before either can be demoted or removed.
 4. Add everyone else. Each person needs a Google account for the email you
@@ -342,7 +342,7 @@ Restart the app (`sudo systemctl restart pta-web pta-worker`), then do 2.7.
 
 ### 2.10 Prove it works
 
-1. **Sending:** on a newsletter, use **Send test to me**. It should arrive
+1. **Sending:** on a message, use **Send Preview** (it emails a copy to you only). It should arrive
    within a minute. In Gmail, open it → ⋮ → **Show original**: SPF, DKIM and
    DMARC should all say **PASS**.
 2. **Bounces:** on the public signup page, subscribe

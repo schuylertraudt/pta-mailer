@@ -15,8 +15,8 @@ import { hasBlocker } from "@/lib/render/checks";
 export async function enqueueCampaign(db: Db, campaignId: string, officerId: string) {
   return db.transaction(async (tx) => {
     const [c] = await tx.select().from(campaigns).where(eq(campaigns.id, campaignId)).for("update");
-    if (!c) throw new CampaignError(404, "Newsletter not found");
-    if (!EDITABLE.includes(c.status as never)) throw new CampaignError(409, `Newsletter is already ${c.status}.`);
+    if (!c) throw new CampaignError(404, "Message not found");
+    if (!EDITABLE.includes(c.status as never)) throw new CampaignError(409, `Message is already ${c.status}.`);
 
     const brand = await getBrandRow(tx);
     if (brand.ptaMailingAddress === DEFAULT_BRAND_ROW.ptaMailingAddress) {
@@ -29,9 +29,10 @@ export async function enqueueCampaign(db: Db, campaignId: string, officerId: str
     }
     const archive = await renderCampaign(tx, c, { mode: archiveMode() });
 
-    const where = await recipientFilter(tx, c.segmentId);
+    if (!c.segmentIds.length) throw new CampaignError(422, "Choose who this message goes to.");
+    const where = await recipientFilter(tx, c.segmentIds);
     const [{ n }] = await tx.select({ n: count() }).from(subscribers).where(where);
-    if (n === 0) throw new CampaignError(422, "No eligible recipients in this audience.");
+    if (n === 0) throw new CampaignError(422, "No eligible recipients in the selected audiences.");
 
     await tx
       .update(campaigns)

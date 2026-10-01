@@ -43,6 +43,20 @@
       "when": 1790810058886,
       "tag": "0005_drop_grade_teacher",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790872845561,
+      "tag": "0006_message_audiences",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790872846519,
+      "tag": "0007_drop_campaign_segment_id",
+      "breakpoints": true
     }
   ]
 }

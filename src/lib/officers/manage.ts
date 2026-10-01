@@ -97,7 +97,7 @@ async function notify(db: Db, actor: Actor, change: Change) {
         : `PTA mailer: ${who} is no longer an admin`;
     const detail =
       kind === "granted"
-        ? `${by} granted ${who} the ${change.after.role} role. ${change.after.role === "admin" ? "Admins can manage the team and send to all families." : "Senders can send newsletters to all families."}`
+        ? `${by} granted ${who} the ${change.after.role} role. ${change.after.role === "admin" ? "Admins can manage the team and send to all families." : "Senders can send messages to all families."}`
         : change.after.active
           ? `${by} changed ${who} from admin to ${change.after.role}.`
           : `${by} deactivated ${who}. Their sessions were ended immediately.`;

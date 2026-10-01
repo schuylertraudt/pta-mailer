@@ -11,7 +11,7 @@ export default function PublicShell(props: { children: React.ReactNode; hideLogi
       <header className={s.header}>
         <nav className={s.nav} aria-label="Site">
           <Link href="/archive" className={s.navArchive}>
-            Past newsletters
+            Past messages
           </Link>
           {props.hideLogin ? <Link href="/">Get PTA news</Link> : <Link href="/login">Login</Link>}
         </nav>

@@ -2,6 +2,7 @@ import { and, eq, sql } from "drizzle-orm";
 import type { Db } from "@/db";
 import { campaigns, sends, subscribers, suppressions } from "@/db/schema";
 import type { EmailProvider } from "@/lib/mail/provider";
+import { fromHeader } from "@/lib/mail/sender";
 import { listUnsubscribeHeaders, UNSUBSCRIBE_TOKEN_PLACEHOLDER } from "@/lib/urls";
 
 export const MAX_ATTEMPTS = 5;
@@ -124,6 +125,7 @@ export async function processQueue(db: Db, provider: EmailProvider, opts: Dispat
         const token = sub!.token;
         const { messageId } = await provider.send({
           to: sub!.email,
+          from: fromHeader(c!.fromName),
           subject: c!.subject,
           html: c!.renderedHtml!.replaceAll(UNSUBSCRIBE_TOKEN_PLACEHOLDER, token),
           text: c!.plaintextBody!.replaceAll(UNSUBSCRIBE_TOKEN_PLACEHOLDER, token),

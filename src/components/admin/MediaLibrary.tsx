@@ -11,7 +11,7 @@ const ACCEPT = "image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif,
  * Upload (drag-drop or picker) and browse previously uploaded images.
  * In picker mode, "Insert" stays disabled until alt text is filled in.
  */
-export default function MediaLibrary(props: { onPick?: (a: Asset & { altText: string }) => void; pickLabel?: string }) {
+export default function MediaLibrary(props: { onPick?: (a: Asset & { altText: string }) => void; pickLabel?: string; initialFile?: File }) {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [selected, setSelected] = useState<Asset | null>(null);
   const [alt, setAlt] = useState("");
@@ -55,6 +55,16 @@ export default function MediaLibrary(props: { onPick?: (a: Asset & { altText: st
       setBusy(false);
     }
   }
+
+  // A photo dropped on the composer starts uploading as soon as the library opens.
+  const started = useRef(false);
+  useEffect(() => {
+    if (props.initialFile && !started.current) {
+      started.current = true;
+      void upload(props.initialFile);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function choose(a: Asset) {
     setSelected(a);

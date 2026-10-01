@@ -66,7 +66,7 @@ export async function subscribe(db: Db, raw: SubscribeInput, meta: { ip: string 
   }
 
   const { html, text } = simpleEmail({
-    heading: "Confirm your PTA newsletter subscription",
+    heading: "Confirm your PTA mailing list subscription",
     paragraphs: [
       "Someone (hopefully you) asked to receive PTA news at this address.",
       "Tap the button below to confirm. If this wasn't you, ignore this email and you won't hear from us.",
@@ -74,7 +74,7 @@ export async function subscribe(db: Db, raw: SubscribeInput, meta: { ip: string 
     button: { label: "Confirm subscription", url: confirmPageUrl(token) },
     footer: "This link expires in 7 days.",
   });
-  await getEmailProvider().send({ to: input.email, subject: "Confirm your PTA newsletter subscription", html, text });
+  await getEmailProvider().send({ to: input.email, subject: "Confirm your PTA mailing list subscription", html, text });
   return "sent_confirmation";
 }
 

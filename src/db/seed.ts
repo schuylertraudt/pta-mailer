@@ -55,7 +55,7 @@ export async function seed(db: Db, opts: { subscribers?: number } = {}) {
     await tx
       .insert(segments)
       .values([
-        { name: "All families", rule: "all" },
+        { name: "All subscribers", rule: "all" },
         ...SCHOOLS.map((s) => ({ name: s, rule: `school=${s}` })),
         ...SEED_COMMITTEES.map((c) => ({ name: c, rule: `committee=${c}` })),
       ])

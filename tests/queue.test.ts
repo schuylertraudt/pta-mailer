@@ -50,6 +50,16 @@ describe("queue + dispatch", () => {
     expect(await campaignStats(db, c.id)).toMatchObject({ total: 3, sent: 3, queued: 0, failed: 0 });
   });
 
+  it("sends from the message's own display name on the EMAIL_FROM address", async () => {
+    await makeSubscriber(db);
+    const o = await makeOfficer(db, "sender");
+    const c = await makeCampaign(db, o.id, { fromName: "Orenda PTA" });
+    await enqueueCampaign(db, c.id, o.id);
+    const p = new MemoryProvider();
+    await run(p);
+    expect(p.sent.map((m) => m.from)).toEqual(['"Orenda PTA" <news@pta.example.org>']);
+  });
+
   it("checks suppression at dispatch time, not just queue time", async () => {
     const a = await makeSubscriber(db);
     const b = await makeSubscriber(db);

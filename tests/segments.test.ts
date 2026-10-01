@@ -22,10 +22,28 @@ describe("segments", () => {
     const added = await addMembers(db, garden.id, [o1.email.toUpperCase(), "stranger@example.com"]);
     expect(added).toEqual({ added: 1, unknown: ["stranger@example.com"] });
 
-    expect(await countRecipients(db, all.id)).toBe(3);
+    expect(await countRecipients(db, [all.id])).toBe(3);
     expect(await countRecipients(db, null)).toBe(3);
-    expect((await listRecipients(db, karigon.id)).map((r) => r.id).sort()).toEqual([k1.id, k2.id].sort());
-    expect((await listRecipients(db, garden.id)).map((r) => r.id)).toEqual([o1.id]);
+    expect((await listRecipients(db, [karigon.id])).map((r) => r.id).sort()).toEqual([k1.id, k2.id].sort());
+    expect((await listRecipients(db, [garden.id])).map((r) => r.id)).toEqual([o1.id]);
+  });
+
+  it("sends to anyone in any selected audience, and to nobody when none is selected", async () => {
+    const k = await makeSubscriber(db, { school: "Karigon" });
+    const o = await makeSubscriber(db, { school: "Orenda" });
+    await makeSubscriber(db, { school: "Chango" });
+    const all = await createSegment(db, { name: "All", rule: "all" });
+    const karigon = await createSegment(db, { name: "Karigon", rule: "school=Karigon" });
+    const orenda = await createSegment(db, { name: "Orenda", rule: "school=Orenda" });
+    const garden = await createSegment(db, { name: "Garden", rule: "committee=Garden" });
+    await addMembers(db, garden.id, [k.email]);
+
+    expect(await countRecipients(db, [])).toBe(0);
+    expect((await listRecipients(db, [karigon.id, orenda.id])).map((r) => r.id).sort()).toEqual([k.id, o.id].sort());
+    // Overlapping audiences count each family once.
+    expect(await countRecipients(db, [karigon.id, garden.id])).toBe(1);
+    expect(await countRecipients(db, [karigon.id, all.id])).toBe(3);
+    await expect(countRecipients(db, [karigon.id, "00000000-0000-4000-8000-000000000000"])).rejects.toThrow("Audience not found");
   });
 
   it("rejects invalid and retired rules", async () => {
@@ -35,19 +53,20 @@ describe("segments", () => {
   });
 });
 
-describe("school audiences", () => {
-  it("creates one audience per school, once, without clobbering existing ones", async () => {
-    const { ensureSchoolSegments, listSegmentsWithCounts } = await import("@/lib/segments/service");
+describe("default audiences", () => {
+  it("creates All subscribers and one audience per school, once, without clobbering existing ones", async () => {
+    const { ensureDefaultSegments, listSegmentsWithCounts } = await import("@/lib/segments/service");
     const { SCHOOLS } = await import("@/lib/schools");
     await createSegment(db, { name: "Karigon families", rule: "school=Karigon" });
     await createSegment(db, { name: "Okte", rule: "committee=Okte helpers" });
-    await ensureSchoolSegments(db);
-    await ensureSchoolSegments(db);
+    await ensureDefaultSegments(db);
+    await ensureDefaultSegments(db);
     const segs = await listSegmentsWithCounts(db);
     const rules = segs.map((s) => s.rule);
     for (const s of SCHOOLS.filter((x) => x !== "Okte")) expect(rules.filter((r) => r === `school=${s}`)).toHaveLength(1);
     expect(segs.find((s) => s.rule === "school=Karigon")!.name).toBe("Karigon families");
     expect(segs.filter((s) => s.name === "Okte")).toHaveLength(1);
+    expect(segs.filter((s) => s.rule === "all").map((s) => s.name)).toEqual(["All subscribers"]);
     expect(segs.every((s) => s.recipients === 0)).toBe(true);
   });
 });

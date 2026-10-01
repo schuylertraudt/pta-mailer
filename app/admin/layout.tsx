@@ -12,7 +12,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <>
       <nav className="admin">
         <strong>PTA Mailer</strong>
-        <Link href="/admin">Newsletters</Link>
+        <Link href="/admin">Messages</Link>
         <Link href="/admin/templates">Templates</Link>
         <Link href="/admin/media">Media</Link>
         {can(officer.role, "view_subscribers") && <Link href="/admin/subscribers">Subscribers</Link>}

@@ -29,7 +29,7 @@ async function sent(over: Parameters<typeof makeCampaign>[2] = {}) {
 }
 
 describe("public archive", () => {
-  it("serves sent newsletters without tokens or subscriber data, with images and a no-script CSP", async () => {
+  it("serves sent messages without tokens or subscriber data, with images and a no-script CSP", async () => {
     const subs = await Promise.all([makeSubscriber(db), makeSubscriber(db)]);
     const c = await sent({ body: docOf(BLOCKS.heading1, BLOCKS.image, BLOCKS.paragraph) });
     const res = await get(c.id);

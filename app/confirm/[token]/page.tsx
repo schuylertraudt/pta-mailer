@@ -19,7 +19,7 @@ export default async function ConfirmPage(props: {
         <div className={s.status}>
           <CheckIcon />
           <h1 className={s.h1}>You&apos;re subscribed</h1>
-          <p className={s.lead}>Thanks! You&apos;ll get the next PTA newsletter. Every email has a one-click unsubscribe link.</p>
+          <p className={s.lead}>Thanks! You&apos;ll get the next PTA message. Every email has a one-click unsubscribe link.</p>
         </div>
       </PublicShell>
     );

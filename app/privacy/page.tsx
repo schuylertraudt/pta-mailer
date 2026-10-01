@@ -35,7 +35,7 @@ export default function PrivacyPage() {
           </li>
           <li>When you subscribed and when you confirmed, so we can show you agreed to receive our emails.</li>
           <li>
-            Whether each newsletter was delivered to you, bounced, or was reported as spam, so we can stop sending to addresses
+            Whether each message was delivered to you, bounced, or was reported as spam, so we can stop sending to addresses
             that don&apos;t work or don&apos;t want our mail.
           </li>
           <li>
@@ -50,13 +50,13 @@ export default function PrivacyPage() {
 
         <h2>How we use it</h2>
         <p>
-          Only to send you PTA newsletters and announcements, including ones meant for your school, and to manage your
+          Only to send you PTA messages and announcements, including ones meant for your school, and to manage your
           subscription. We never sell, rent or share your information for anyone else&apos;s marketing.
         </p>
 
         <h2>Committee members and coordinators</h2>
         <p>
-          People who send newsletters log in with their Google account. For them we store their name, email address, a Google
+          People who send messages log in with their Google account. For them we store their name, email address, a Google
           account identifier, their role, and when they last logged in. Google provides only their name and email address; we
           don&apos;t get access to their Gmail, contacts or files. Logging in sets one cookie that keeps them logged in for up
           to 7 days.
@@ -66,7 +66,7 @@ export default function PrivacyPage() {
         <ul>
           <li>Amazon Web Services (Amazon SES) delivers our emails.</li>
           <li>Our website host and database provider store the subscriber list.</li>
-          <li>Our file storage provider hosts the images that appear in newsletters.</li>
+          <li>Our file storage provider hosts the images that appear in messages.</li>
           <li>Google handles login for committee members and coordinators.</li>
         </ul>
         <p>They process the data only to provide these services to us.</p>
@@ -86,8 +86,8 @@ export default function PrivacyPage() {
         <h2>How long we keep it</h2>
         <p>
           While you&apos;re subscribed. If you unsubscribe, or an address bounces or reports spam, we keep the email address
-          on our do-not-mail list so it isn&apos;t emailed again. Past newsletters are posted publicly on the{" "}
-          <Link href="/archive">past newsletters</Link> page; they never include subscriber information.
+          on our do-not-mail list so it isn&apos;t emailed again. Past messages are posted publicly on the{" "}
+          <Link href="/archive">past messages</Link> page; they never include subscriber information.
         </p>
 
         <h2>Changes and questions</h2>

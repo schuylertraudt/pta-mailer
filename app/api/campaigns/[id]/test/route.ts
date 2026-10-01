@@ -4,6 +4,7 @@ import { renderCampaign } from "@/lib/campaigns/render";
 import { getCampaign } from "@/lib/campaigns/service";
 import { json, toResponse } from "@/lib/http";
 import { getEmailProvider } from "@/lib/mail/provider";
+import { fromHeader } from "@/lib/mail/sender";
 import { hitRateLimit } from "@/lib/rate-limit";
 import { listUnsubscribeHeaders } from "@/lib/urls";
 
@@ -19,6 +20,7 @@ export const POST = withOfficer<{ id: string }>("compose", async (_req, officer,
     const text = r.text.replaceAll("__UNSUBSCRIBE_TOKEN__", token);
     await getEmailProvider().send({
       to: officer.email,
+      from: fromHeader(c.fromName),
       subject: `[TEST] ${c.subject || "(no subject)"}`,
       html,
       text,

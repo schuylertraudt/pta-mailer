@@ -2,7 +2,7 @@
 
 Standalone mailing list app for a school PTA. Families subscribe by email only
 (double opt-in, one-click unsubscribe). Team members (committee members and coordinators) log in with Google, compose
-branded newsletters in a block editor, and send through Amazon SES.
+branded messages in a block editor, and send through Amazon SES.
 
 - Launch steps: [docs/LAUNCH.md](docs/LAUNCH.md)
 - Running it year to year: [docs/OPERATIONS.md](docs/OPERATIONS.md)
@@ -80,12 +80,19 @@ The UI says **team member**; the code and database say **officer**
 (`officers` table, `/api/admin/officers`, `src/lib/officers`). The team page
 lives at `/admin/team`.
 
-The UI says **newsletter**; the code and database say **campaign** (`campaigns`
+The UI says **message**; the code and database say **campaign** (`campaigns`
 table, `/api/campaigns`, `src/lib/campaigns`). Same thing: one piece of content
-with its audience and approval status. Each per-family delivery of it is a row
-in `sends`.
+with its audiences, sender name and approval status. Each per-family delivery
+of it is a row in `sends`.
 
 ## Decisions worth knowing
+
+- **A message goes to the union of its audiences, and to nobody until one is
+  picked.** "All subscribers" is an audience of its own (rule `all`), so
+  forgetting to choose recipients can never mail every family.
+- **Sender Display Name changes only the name** on the From line. The address
+  stays the verified `EMAIL_FROM` address, and the name is stripped of quotes,
+  angle brackets and control characters so it can't forge an address or header.
 
 - **Unsubscribe link opens a page with one "Unsubscribe" button** instead of
   unsubscribing on page load. Corporate and school mail scanners open every

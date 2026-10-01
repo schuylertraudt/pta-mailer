@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "PTA News",
-  description: "School PTA newsletter",
+  description: "School PTA mailing list",
 };
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1 };

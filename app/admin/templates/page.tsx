@@ -7,7 +7,7 @@ export default async function TemplatesPage() {
   return (
     <div className="stack">
       <h1>Templates</h1>
-      <p className="muted">Save any newsletter as a template from the composer. Starter templates can&apos;t be deleted.</p>
+      <p className="muted">Save any message as a template from the composer. Starter templates can&apos;t be deleted.</p>
       <TemplateList templates={templates.map((t) => ({ id: t.id, name: t.name, starter: isStarter(t.id), updatedAt: t.updatedAt.toISOString() }))} />
     </div>
   );

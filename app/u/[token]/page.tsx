@@ -19,7 +19,7 @@ export default async function UnsubscribePage(props: {
         <div className={s.status}>
           <CheckIcon />
           <h1 className={s.h1}>You&apos;re unsubscribed</h1>
-          <p className={s.lead}>You won&apos;t receive any more PTA newsletters at this address.</p>
+          <p className={s.lead}>You won&apos;t receive any more PTA messages at this address.</p>
           <p className={s.small}>
             Changed your mind? <Link href="/">Subscribe again</Link>.
           </p>
@@ -46,7 +46,7 @@ export default async function UnsubscribePage(props: {
     <PublicShell>
       <div className={s.status}>
         <h1 className={s.h1}>Unsubscribe from PTA news?</h1>
-        <p className={s.lead}>You&apos;ll stop receiving PTA newsletters at this address.</p>
+        <p className={s.lead}>You&apos;ll stop receiving PTA messages at this address.</p>
         <form method="post" action={`/api/unsubscribe/${encodeURIComponent(token)}`} style={{ width: "100%" }}>
           <button type="submit" className={s.button}>
             Unsubscribe

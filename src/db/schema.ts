@@ -265,7 +265,11 @@ export const campaigns = pgTable(
     // Rendered at send time for the public archive: no unsubscribe tokens, no subscriber data.
     archiveHtml: text("archive_html"),
     templateId: uuid("template_id").references(() => templates.id, { onDelete: "set null" }),
-    segmentId: uuid("segment_id").references(() => segments.id),
+    // Audiences the message goes to (union). Empty means nobody, so a message is
+    // never sent to everyone by default; "All subscribers" is an audience of its own.
+    segmentIds: uuid("segment_ids").array().notNull().default(sql`'{}'::uuid[]`),
+    // Display name on the From line; empty uses the name in EMAIL_FROM.
+    fromName: text("from_name").notNull().default(""),
     status: campaignStatus("status").notNull().default("draft"),
     createdBy: uuid("created_by")
       .notNull()

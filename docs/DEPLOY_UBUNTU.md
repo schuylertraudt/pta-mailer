@@ -14,7 +14,7 @@ Addresses used in this guide:
 
 | Address | What it is |
 | --- | --- |
-| `mail.atreapta.com` | The site's address, and also the domain newsletters are sent from (`news@mail.atreapta.com`, set up in the Amazon guide) |
+| `mail.atreapta.com` | The site's address, and also the domain messages are sent from (`news@mail.atreapta.com`, set up in the Amazon guide) |
 | `pta@atreapta.com` | Example of a mailbox someone reads, for replies. Use a real one |
 | `SERVER_IP` | Your server's public IP address. Replace it with the real one |
 
@@ -115,7 +115,7 @@ sudo chown -R pta:pta /var/lib/pta-mailer
 sudo chmod 755 /var/lib/pta-mailer /var/lib/pta-mailer/media
 ```
 
-`/var/lib/pta-mailer/media` holds uploaded newsletter images.
+`/var/lib/pta-mailer/media` holds uploaded message images.
 
 ## 6. Get the code
 
@@ -149,7 +149,7 @@ DATABASE_URL=postgres://pta:<database password from step 4>@localhost:5432/pta_m
 APP_URL=https://mail.atreapta.com
 AUTH_SECRET=<random secret from the line above>
 
-# Newsletters come from this address (must be on the domain you verify with Amazon).
+# Messages come from this address (must be on the domain you verify with Amazon).
 EMAIL_FROM="PTA News <news@mail.atreapta.com>"
 # A mailbox someone reads. Replies and privacy requests go here.
 EMAIL_REPLY_TO=pta@atreapta.com
@@ -284,7 +284,7 @@ server {
     # Image uploads are up to 10 MB (nginx's default limit is 1 MB).
     client_max_body_size 12m;
 
-    # Uploaded newsletter images, straight from disk. No folder listings.
+    # Uploaded message images, straight from disk. No folder listings.
     location /media/ {
         alias /var/lib/pta-mailer/media/;
         autoindex off;
@@ -339,7 +339,7 @@ In a browser:
 - `https://mail.atreapta.com` shows the signup page, with a padlock in the
   address bar.
 - `https://mail.atreapta.com/privacy` shows the privacy policy.
-- `https://mail.atreapta.com/archive` shows "Past newsletters".
+- `https://mail.atreapta.com/archive` shows "Past messages".
 
 Subscribe with your own email. You won't receive anything yet (sending isn't
 connected), but the confirmation email appears in the website's log, which
@@ -444,5 +444,5 @@ From then on, `git pull` in "Updating to a new version" follows `main`.
 | No padlock / certificate error | DNS doesn't point at the server yet (step 1), or ports 80/443 are blocked (step 2). Run `sudo certbot --nginx -d mail.atreapta.com --redirect` again; its message says which |
 | Image upload fails with "413" or "Request Entity Too Large" | `client_max_body_size 12m;` is missing from the nginx site (step 10) |
 | Build stops with "JavaScript heap out of memory" or "Killed" | Not enough RAM: add swap (step 2) and build again |
-| Images in newsletters don't show | `STORAGE_PUBLIC_BASE_URL` must be `https://<your domain>/media`, and the nginx `location /media/` block must be present (step 10) |
+| Images in messages don't show | `STORAGE_PUBLIC_BASE_URL` must be `https://<your domain>/media`, and the nginx `location /media/` block must be present (step 10) |
 | `git pull` asks for a username or says "Repository not found" | The repository was made private. Make it public again, or ask a developer to set up read access for the server |

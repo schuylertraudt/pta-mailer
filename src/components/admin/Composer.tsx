@@ -4,12 +4,15 @@ import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/r
 import { NodeSelection } from "@tiptap/pm/state";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Placeholder } from "@tiptap/extensions";
 import { emailExtensions } from "@/lib/editor/extensions";
 import { COLOR_TOKENS, CONTENT_WIDTH, type ColorToken } from "@/lib/editor/model";
 import type { Check } from "@/lib/render/checks";
 import { api } from "./api";
 import MediaLibrary, { type Asset } from "./MediaLibrary";
+import { Icon } from "./icons";
 import Modal from "./Modal";
+import RecipientPicker from "./RecipientPicker";
 
 type Status = "draft" | "pending_approval" | "approved" | "sending" | "sent" | "failed";
 type Campaign = {
@@ -17,7 +20,8 @@ type Campaign = {
   subject: string;
   preheader: string;
   bodyJson: unknown;
-  segmentId: string | null;
+  segmentIds: string[];
+  fromName: string;
   showInArchive: boolean;
   status: Status;
 };
@@ -42,19 +46,44 @@ function insertBlock(editor: Editor, content: object) {
   return (sel instanceof NodeSelection ? chain.insertContentAt(sel.to, content) : chain.insertContent(content)).run();
 }
 
-function Tb(props: { onClick: () => void; active?: boolean; label: string; title?: string; disabled?: boolean }) {
+function Tb(props: { onClick: () => void; active?: boolean; title: string; children: React.ReactNode; disabled?: boolean }) {
   return (
     <button
       type="button"
-      className={props.active ? "small" : "secondary small"}
+      className={props.active ? "tb-btn on" : "tb-btn"}
       onMouseDown={(e) => e.preventDefault()}
       onClick={props.onClick}
-      title={props.title ?? props.label}
+      title={props.title}
+      aria-label={props.title}
       aria-pressed={props.active}
       disabled={props.disabled}
     >
-      {props.label}
+      {props.children}
     </button>
+  );
+}
+
+function ColorPicker({ editor, palette, value }: { editor: Editor; palette: Record<ColorToken, string>; value: ColorToken | "" }) {
+  const [open, setOpen] = useState(false);
+  const c = () => editor.chain().focus();
+  return (
+    <span className="tb-pop">
+      <Tb title="Text color" onClick={() => setOpen((o) => !o)} active={open}>
+        <span className="swatch" style={{ background: value ? palette[value] : "var(--fg)" }} />
+      </Tb>
+      {open && (
+        <span className="tb-menu" role="menu">
+          <button type="button" role="menuitem" onMouseDown={(e) => e.preventDefault()} onClick={() => (c().unsetMark("brandColor").run(), setOpen(false))}>
+            <span className="swatch" style={{ background: "var(--fg)" }} /> Default
+          </button>
+          {COLOR_TOKENS.map((t) => (
+            <button key={t} type="button" role="menuitem" onMouseDown={(e) => e.preventDefault()} onClick={() => (c().setMark("brandColor", { color: t }).run(), setOpen(false))}>
+              <span className="swatch" style={{ background: palette[t] }} /> {t[0].toUpperCase() + t.slice(1)}
+            </button>
+          ))}
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -74,7 +103,9 @@ function Toolbar({ editor, palette, onInsert }: { editor: Editor; palette: Recor
       left: e.isActive({ textAlign: "left" }),
       center: e.isActive({ textAlign: "center" }),
       right: e.isActive({ textAlign: "right" }),
-      color: (e.getAttributes("brandColor").color as ColorToken | undefined) ?? "",
+      color: ((e.getAttributes("brandColor").color as ColorToken | undefined) ?? "") as ColorToken | "",
+      undo: e.can().undo(),
+      redo: e.can().redo(),
     }),
   });
   const c = () => editor.chain().focus();
@@ -86,41 +117,87 @@ function Toolbar({ editor, palette, onInsert }: { editor: Editor; palette: Recor
     else c().extendMarkRange("link").setLink({ href: url.trim() }).run();
   }
   return (
-    <div className="row" style={{ gap: 4, padding: 8, borderBottom: "1px solid var(--border)", position: "sticky", top: 0, background: "var(--card)", zIndex: 2 }}>
-      <Tb label="P" title="Paragraph" onClick={() => c().setParagraph().run()} />
-      <Tb label="H1" active={s.h1} onClick={() => c().toggleHeading({ level: 1 }).run()} />
-      <Tb label="H2" active={s.h2} onClick={() => c().toggleHeading({ level: 2 }).run()} />
-      <Tb label="H3" active={s.h3} onClick={() => c().toggleHeading({ level: 3 }).run()} />
-      <span style={{ width: 8 }} />
-      <Tb label="B" title="Bold" active={s.bold} onClick={() => c().toggleBold().run()} />
-      <Tb label="I" title="Italic" active={s.italic} onClick={() => c().toggleItalic().run()} />
-      <Tb label="U" title="Underline" active={s.underline} onClick={() => c().toggleUnderline().run()} />
-      <Tb label="Link" active={s.link} onClick={link} />
-      <select
-        aria-label="Text color"
-        value={s.color}
-        onChange={(e) => (e.target.value ? c().setMark("brandColor", { color: e.target.value }).run() : c().unsetMark("brandColor").run())}
-        style={{ width: "auto", padding: "4px 8px" }}
-      >
-        <option value="">Default color</option>
-        {COLOR_TOKENS.map((t) => (
-          <option key={t} value={t} style={{ color: palette[t] }}>
-            {t[0].toUpperCase() + t.slice(1)}
-          </option>
+    <div className="toolbar" role="toolbar" aria-label="Formatting">
+      <span className="tb-group">
+        <Tb title="Bold" active={s.bold} onClick={() => c().toggleBold().run()}>
+          <b>B</b>
+        </Tb>
+        <Tb title="Italic" active={s.italic} onClick={() => c().toggleItalic().run()}>
+          <i style={{ fontFamily: "Georgia, serif" }}>I</i>
+        </Tb>
+        <Tb title="Underline" active={s.underline} onClick={() => c().toggleUnderline().run()}>
+          <u>U</u>
+        </Tb>
+        <Tb title="Clear formatting" onClick={() => c().unsetAllMarks().clearNodes().run()}>
+          <span>
+            T<sub style={{ fontSize: 9 }}>x</sub>
+          </span>
+        </Tb>
+      </span>
+      <span className="tb-group">
+        {([1, 2, 3] as const).map((l) => (
+          <Tb key={l} title={`Heading ${l}`} active={s[`h${l}`]} onClick={() => c().toggleHeading({ level: l }).run()}>
+            <span>
+              H<sub style={{ fontSize: 9 }}>{l}</sub>
+            </span>
+          </Tb>
         ))}
-      </select>
-      <span style={{ width: 8 }} />
-      <Tb label="• List" active={s.bullet} onClick={() => c().toggleBulletList().run()} />
-      <Tb label="1. List" active={s.ordered} onClick={() => c().toggleOrderedList().run()} />
-      <Tb label="Left" active={s.left} onClick={() => c().setTextAlign("left").run()} />
-      <Tb label="Center" active={s.center} onClick={() => c().setTextAlign("center").run()} />
-      <Tb label="Right" active={s.right} onClick={() => c().setTextAlign("right").run()} />
-      <span style={{ width: 8 }} />
-      <Tb label="+ Image" onClick={() => onInsert("image")} />
-      <Tb label="+ Button" onClick={() => onInsert("button")} />
-      <Tb label="+ Image & text" onClick={() => onInsert("twoColumn")} />
-      <Tb label="+ Divider" onClick={() => c().setHorizontalRule().run()} />
-      <Tb label="+ Spacer" onClick={() => insertBlock(editor, { type: "spacer", attrs: { height: 24 } })} />
+      </span>
+      <span className="tb-group">
+        <ColorPicker editor={editor} palette={palette} value={s.color} />
+      </span>
+      <span className="tb-group">
+        <Tb title="Insert image" onClick={() => onInsert("image")}>
+          <Icon name="image" />
+        </Tb>
+        <Tb title="Insert image with text beside it" onClick={() => onInsert("twoColumn")}>
+          <Icon name="imageText" />
+        </Tb>
+        <Tb title="Insert button" onClick={() => onInsert("button")}>
+          <Icon name="button" />
+        </Tb>
+        <Tb title="Insert divider line" onClick={() => c().setHorizontalRule().run()}>
+          <Icon name="divider" />
+        </Tb>
+        <Tb title="Insert space" onClick={() => insertBlock(editor, { type: "spacer", attrs: { height: 24 } })}>
+          <Icon name="spacer" />
+        </Tb>
+      </span>
+      <span className="tb-group">
+        <Tb title="Bulleted list" active={s.bullet} onClick={() => c().toggleBulletList().run()}>
+          <Icon name="bullet" />
+        </Tb>
+        <Tb title="Numbered list" active={s.ordered} onClick={() => c().toggleOrderedList().run()}>
+          <Icon name="ordered" />
+        </Tb>
+      </span>
+      <span className="tb-group">
+        <Tb title="Add link" active={s.link} onClick={link}>
+          <Icon name="link" />
+        </Tb>
+        <Tb title="Remove link" disabled={!s.link} onClick={() => c().extendMarkRange("link").unsetLink().run()}>
+          <Icon name="unlink" />
+        </Tb>
+      </span>
+      <span className="tb-group">
+        <Tb title="Align left" active={s.left} onClick={() => c().setTextAlign("left").run()}>
+          <Icon name="alignLeft" />
+        </Tb>
+        <Tb title="Align center" active={s.center} onClick={() => c().setTextAlign("center").run()}>
+          <Icon name="alignCenter" />
+        </Tb>
+        <Tb title="Align right" active={s.right} onClick={() => c().setTextAlign("right").run()}>
+          <Icon name="alignRight" />
+        </Tb>
+      </span>
+      <span className="tb-group">
+        <Tb title="Undo" disabled={!s.undo} onClick={() => c().undo().run()}>
+          <Icon name="undo" />
+        </Tb>
+        <Tb title="Redo" disabled={!s.redo} onClick={() => c().redo().run()}>
+          <Icon name="redo" />
+        </Tb>
+      </span>
     </div>
   );
 }
@@ -155,7 +232,7 @@ function BlockPanel({ editor, onReplaceImage }: { editor: Editor; onReplaceImage
     </>
   );
   return (
-    <div className="card" style={{ marginTop: 12 }}>
+    <div className="block-panel">
       {info.type === "emailImage" && (
         <>
           <strong>Image</strong>
@@ -218,11 +295,50 @@ function BlockPanel({ editor, onReplaceImage }: { editor: Editor; onReplaceImage
   );
 }
 
+function Dropzone(props: { onFile: (f: File) => void; onBrowse: () => void }) {
+  const [drag, setDrag] = useState(false);
+  return (
+    <div
+      className={drag ? "dropzone over" : "dropzone"}
+      role="button"
+      tabIndex={0}
+      onClick={props.onBrowse}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), props.onBrowse())}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDrag(true);
+      }}
+      onDragLeave={() => setDrag(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDrag(false);
+        const f = e.dataTransfer.files[0];
+        if (f) props.onFile(f);
+      }}
+    >
+      <span className="dropzone-icon">
+        <Icon name="upload" size={28} />
+      </span>
+      <span>Drag &amp; drop a photo to add it to the message, or select a file</span>
+      <span className="muted" style={{ fontSize: 12 }}>
+        JPG, PNG, GIF, WebP or HEIC up to 10 MB. Resized and stripped of location data automatically.
+      </span>
+    </div>
+  );
+}
+
+type ModalState =
+  | null
+  | { kind: "image" | "twoColumn"; replace?: "emailImage" | "twoColumn"; file?: File }
+  | { kind: "button" | "send" | "template" | "recipients" | "preview" };
+
 export default function Composer(props: {
   campaign: Campaign;
   segments: Segment[];
   role: "admin" | "sender" | "drafter";
   palette: Record<ColorToken, string>;
+  senderDefault: string;
+  senderSuggestions: string[];
 }) {
   const router = useRouter();
   const [c, setC] = useState(props.campaign);
@@ -232,18 +348,23 @@ export default function Composer(props: {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [width, setWidth] = useState<600 | 375>(600);
   const [dark, setDark] = useState(false);
-  const [modal, setModal] = useState<null | { kind: "image" | "twoColumn" | "button" | "send" | "template"; replace?: "emailImage" | "twoColumn" }>(null);
+  const [modal, setModal] = useState<ModalState>(null);
+  const [menu, setMenu] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
   const [busy, setBusy] = useState(false);
   const canSend = props.role !== "drafter";
+  const canViewRecipients = props.role !== "drafter";
   const editable = EDITABLE.includes(c.status);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const statusRef = useRef(c.status);
   statusRef.current = c.status;
-  const fields = useRef({ subject: c.subject, preheader: c.preheader, segmentId: c.segmentId, showInArchive: c.showInArchive });
+  const saveStateRef = useRef(saveState);
+  saveStateRef.current = saveState;
+  const menuRef = useRef<HTMLDivElement>(null);
+  const fields = useRef({ subject: c.subject, preheader: c.preheader, segmentIds: c.segmentIds, fromName: c.fromName, showInArchive: c.showInArchive });
 
   const editor = useEditor({
-    extensions: emailExtensions(),
+    extensions: [...emailExtensions(), Placeholder.configure({ placeholder: "Enter email message" })],
     content: props.campaign.bodyJson as object,
     editable,
     immediatelyRender: false,
@@ -259,14 +380,14 @@ export default function Composer(props: {
         method: "PATCH",
         body: { ...fields.current, bodyJson: editor.getJSON() },
       });
-      if (c.status !== "draft" && campaign.status === "draft") setNotice("Edited after submission, so this newsletter is back to draft and needs approval again.");
+      if (statusRef.current !== "draft" && campaign.status === "draft") setNotice("Edited after submission, so this message is back to draft and needs approval again.");
       setC((prev) => ({ ...prev, status: campaign.status }));
       setSaveState("saved");
     } catch (e) {
       setSaveState("error");
       setError((e as Error).message);
     }
-  }, [editor, c.id, c.status]);
+  }, [editor, c.id]);
 
   function schedule() {
     if (!EDITABLE.includes(statusRef.current)) return;
@@ -283,20 +404,40 @@ export default function Composer(props: {
     schedule();
   }
 
-  const refreshPreview = useCallback(async () => {
-    if (saveState !== "saved") await saveRef.current();
-    try {
-      setPreview(await api<Preview>(`/api/campaigns/${c.id}/preview`, { body: { dark } }));
-    } catch (e) {
-      setError((e as Error).message);
-    }
-  }, [c.id, dark, saveState]);
+  const refreshPreview = useCallback(
+    async (opts: { dark?: boolean } = {}) => {
+      if (saveStateRef.current !== "saved") await saveRef.current();
+      try {
+        const p = await api<Preview>(`/api/campaigns/${c.id}/preview`, { body: { dark: !!opts.dark } });
+        setPreview(p);
+        return p;
+      } catch (e) {
+        setError((e as Error).message);
+        return null;
+      }
+    },
+    [c.id],
+  );
+
+  // Recipient count (and content checks): on load, and shortly after the audiences change.
+  const audienceKey = c.segmentIds.join(",");
+  useEffect(() => {
+    const t = setTimeout(() => void refreshPreview(), 600);
+    return () => clearTimeout(t);
+  }, [audienceKey, refreshPreview]);
 
   useEffect(() => {
-    void refreshPreview();
-    // Re-render when dark mode toggles or after the first load.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dark]);
+    if (modal?.kind === "preview") void refreshPreview({ dark });
+  }, [dark, modal?.kind, refreshPreview]);
+
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenu(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [menu]);
 
   useEffect(() => {
     if (c.status !== "sending" && c.status !== "sent" && c.status !== "failed") return;
@@ -318,6 +459,7 @@ export default function Composer(props: {
   async function action(path: string, okMsg: string) {
     setBusy(true);
     setError("");
+    setMenu(false);
     try {
       await saveRef.current();
       const res = await api<{ campaign?: Campaign; queued?: number; to?: string }>(`/api/campaigns/${c.id}/${path}`, { body: {} });
@@ -336,8 +478,26 @@ export default function Composer(props: {
     }
   }
 
+  async function saveNow() {
+    setError("");
+    await saveRef.current();
+    if (saveStateRef.current !== "error") setNotice("Draft saved.");
+  }
+
+  async function remove() {
+    setMenu(false);
+    if (!window.confirm("Delete this message? This can't be undone.")) return;
+    try {
+      if (timer.current) clearTimeout(timer.current);
+      await api(`/api/campaigns/${c.id}`, { method: "DELETE" });
+      router.push("/admin");
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
   function insertAsset(a: Asset & { altText: string }) {
-    if (!editor || !modal) return;
+    if (!editor || !modal || (modal.kind !== "image" && modal.kind !== "twoColumn")) return;
     const width = Math.min(CONTENT_WIDTH, a.width);
     const chain = editor.chain().focus();
     if (modal.replace === "emailImage") chain.updateAttributes("emailImage", { src: a.publicUrl, alt: a.altText, assetId: a.id, width }).run();
@@ -352,56 +512,88 @@ export default function Composer(props: {
     setModal(null);
   }
 
-  const segment = props.segments.find((s) => s.id === c.segmentId);
+  const title = c.subject.trim() || (editable ? "New Message" : "(no subject)");
+  const chosen = props.segments.filter((s) => c.segmentIds.includes(s.id));
   const blockers = preview?.checks.filter((x) => x.level === "block") ?? [];
+  const menuItems: { label: string; onClick: () => void; danger?: boolean }[] = [];
+  if (canSend && editable)
+    menuItems.push({
+      label: "Send now…",
+      onClick: async () => {
+        setMenu(false);
+        await refreshPreview();
+        setModal({ kind: "send" });
+      },
+    });
+  if (editable && props.role === "drafter" && c.status === "draft")
+    menuItems.push({ label: "Submit for approval", onClick: () => action("submit", "Submitted for approval. A sender or admin will review it.") });
+  if (editable && props.role === "drafter" && c.status !== "draft") menuItems.push({ label: "Withdraw submission", onClick: () => action("unsubmit", "Returned to draft.") });
+  if (canSend && c.status === "pending_approval") menuItems.push({ label: "Approve", onClick: () => action("approve", "Approved.") });
+  menuItems.push({ label: "Save as template", onClick: () => (setMenu(false), setModal({ kind: "template" })) });
+  if (editable) menuItems.push({ label: "Delete message", onClick: remove, danger: true });
 
   return (
-    <div className="stack">
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <div className="row">
-          <a href="/admin">← Newsletters</a>
-          <span className="badge">{STATUS_LABEL[c.status]}</span>
-          <span className="muted" style={{ fontSize: 13 }}>
-            {editable ? { saved: "All changes saved", dirty: "Unsaved changes", saving: "Saving…", error: "Save failed" }[saveState] : "Read-only"}
-          </span>
+    <div className="composer">
+      <nav className="crumbs" aria-label="Breadcrumb">
+        <a href="/admin">Messages</a>
+        <span aria-hidden="true">›</span>
+        <span>{title}</span>
+      </nav>
+      <div className="page-head">
+        <div>
+          <h1>{title}</h1>
+          <div className="row" style={{ marginTop: 4 }}>
+            <span className="badge">{STATUS_LABEL[c.status]}</span>
+            <span className="muted" style={{ fontSize: 13 }}>
+              {editable ? { saved: "All changes saved", dirty: "Unsaved changes", saving: "Saving…", error: "Save failed" }[saveState] : "Sent messages can't be edited"}
+            </span>
+          </div>
         </div>
-        <div className="row">
-          <button type="button" className="secondary" disabled={busy} onClick={() => action("test", "Test sent to {to}.")}>
-            Send test to me
+        <div className="page-actions">
+          <button type="button" className="link-btn" onClick={() => setModal({ kind: "preview" })}>
+            Preview
           </button>
-          <button type="button" className="secondary" onClick={() => setModal({ kind: "template" })}>
-            Save as template
+          <button type="button" className="link-btn" disabled={busy} title="Email a test copy to yourself" onClick={() => action("test", "Preview sent to {to}.")}>
+            Send Preview
           </button>
-          {editable && props.role === "drafter" && c.status === "draft" && (
-            <button type="button" disabled={busy} onClick={() => action("submit", "Submitted for approval. A sender or admin will review it.")}>
-              Submit for approval
+          <div className="split" ref={menuRef}>
+            {editable ? (
+              <button type="button" disabled={busy || saveState === "saving"} onClick={saveNow}>
+                Save Draft
+              </button>
+            ) : (
+              <button type="button" onClick={() => setModal({ kind: "template" })}>
+                Save as Template
+              </button>
+            )}
+            <button type="button" className="split-toggle" aria-label="More actions" aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
+              <Icon name="chevronDown" />
             </button>
-          )}
-          {editable && c.status !== "draft" && props.role === "drafter" && (
-            <button type="button" className="secondary" disabled={busy} onClick={() => action("unsubmit", "Returned to draft.")}>
-              Withdraw
-            </button>
-          )}
-          {canSend && c.status === "pending_approval" && (
-            <button type="button" className="secondary" disabled={busy} onClick={() => action("approve", "Approved.")}>
-              Approve
-            </button>
-          )}
-          {canSend && editable && (
-            <button type="button" disabled={busy} onClick={async () => {
-              await refreshPreview();
-              setModal({ kind: "send" });
-            }}>
-              Send…
-            </button>
-          )}
+            {menu && (
+              <div className="menu" role="menu">
+                {menuItems.map((m) => (
+                  <button key={m.label} type="button" role="menuitem" className={m.danger ? "danger-text" : undefined} disabled={busy} onClick={m.onClick}>
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {notice && <p className="ok" role="status">{notice}</p>}
-      {error && <p className="error" role="alert">{error}</p>}
+      {notice && (
+        <p className="ok" role="status">
+          {notice}
+        </p>
+      )}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
       {stats && (
-        <div className="card row" style={{ gap: 24 }}>
+        <section className="panel row" style={{ gap: 24 }}>
           <strong>Delivery</strong>
           <span>Queued {stats.queued}</span>
           <span>Sent {stats.sent}</span>
@@ -409,84 +601,91 @@ export default function Composer(props: {
           <span>Skipped {stats.skipped}</span>
           <span>Bounced {stats.bounced}</span>
           <span>Complaints {stats.complained}</span>
-        </div>
+        </section>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 640px)", gap: 16 }} className="composer-grid">
-        <div className="stack">
-          <div className="card">
-            <label htmlFor="subject">Subject</label>
-            <input id="subject" value={c.subject} maxLength={200} disabled={!editable} onChange={(e) => setField("subject", e.target.value)} />
-            <label htmlFor="preheader">Preheader (inbox preview text)</label>
-            <input id="preheader" value={c.preheader} maxLength={200} disabled={!editable} onChange={(e) => setField("preheader", e.target.value)} />
-            <label htmlFor="segment">Audience</label>
-            <select id="segment" value={c.segmentId ?? ""} disabled={!editable} onChange={(e) => setField("segmentId", e.target.value || null)}>
-              <option value="">All confirmed subscribers</option>
-              {props.segments.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({s.recipients})
-                </option>
-              ))}
-            </select>
-            <label className="row" style={{ fontWeight: 400 }}>
-              <input type="checkbox" checked={c.showInArchive} disabled={!editable} onChange={(e) => setField("showInArchive", e.target.checked)} />
-              Show in the public newsletter archive
-            </label>
-          </div>
-          <div className="card editor" style={{ padding: 0, ...Object.fromEntries(COLOR_TOKENS.map((t) => [`--pal-${t}`, props.palette[t]])) }}>
-            {editor && editable && <Toolbar editor={editor} palette={props.palette} onInsert={(k) => setModal({ kind: k })} />}
-            <p className="muted" style={{ fontSize: 13, margin: "8px 16px 0" }}>
-              The logo header and the footer (address + unsubscribe link) are added automatically.
-            </p>
-            <EditorContent editor={editor} />
-          </div>
-          {editor && editable && <BlockPanel editor={editor} onReplaceImage={(t) => setModal({ kind: "image", replace: t })} />}
-        </div>
-
-        <div className="stack">
-          <div className="row">
-            <button type="button" className={width === 600 ? "small" : "secondary small"} onClick={() => setWidth(600)}>
-              Desktop
+      <section className="panel">
+        <div className="panel-head">
+          <h2>Recipients</h2>
+          {canViewRecipients && (
+            <button type="button" className="link-btn" disabled={!c.segmentIds.length} onClick={() => setModal({ kind: "recipients" })}>
+              View Selected Recipients
             </button>
-            <button type="button" className={width === 375 ? "small" : "secondary small"} onClick={() => setWidth(375)}>
-              Mobile
-            </button>
-            <button type="button" className={!dark ? "small" : "secondary small"} onClick={() => setDark(false)}>
-              Light
-            </button>
-            <button type="button" className={dark ? "small" : "secondary small"} onClick={() => setDark(true)}>
-              Dark
-            </button>
-            <button type="button" className="secondary small" onClick={() => void refreshPreview()}>
-              Refresh preview
-            </button>
-          </div>
-          {preview && (
-            <>
-              <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-                {(preview.bytes / 1024).toFixed(1)} KB · {preview.recipients} recipient{preview.recipients === 1 ? "" : "s"}
-              </p>
-              {preview.checks.map((x) => (
-                <p key={x.code} className={x.level === "block" ? "error" : "warn"} style={{ margin: 0 }}>
-                  {x.message}
-                </p>
-              ))}
-              <div style={{ overflowX: "auto" }}>
-                <iframe
-                  title="Email preview"
-                  sandbox=""
-                  srcDoc={preview.html}
-                  style={{ width, maxWidth: "none", height: 900, border: "1px solid var(--border)", borderRadius: 8, background: dark ? "#111418" : "#fff", display: "block", margin: "0 auto" }}
-                />
-              </div>
-            </>
           )}
         </div>
-      </div>
+        <span className="field-label" id="recipients-label">
+          Recipients
+        </span>
+        <RecipientPicker audiences={props.segments} value={c.segmentIds} disabled={!editable} onChange={(ids) => setField("segmentIds", ids)} />
+        <p className="muted hint">
+          {!c.segmentIds.length
+            ? "Choose one or more audiences. Nobody is selected yet."
+            : preview
+              ? `${preview.recipients} ${preview.recipients === 1 ? "family" : "families"} will receive this. A family in more than one selected audience gets one copy.`
+              : "Counting…"}
+        </p>
+      </section>
+
+      <section className="panel">
+        <div className="panel-head">
+          <h2>Message Details</h2>
+        </div>
+        <div className="field-grid">
+          <div>
+            <label htmlFor="subject">Subject</label>
+            <input id="subject" placeholder="Enter subject" value={c.subject} maxLength={200} disabled={!editable} onChange={(e) => setField("subject", e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="fromName" className="label-row">
+              Sender Display Name
+              <span className="muted" title="The name families see in their inbox. The sending address stays the same.">
+                <Icon name="info" />
+              </span>
+            </label>
+            <input
+              id="fromName"
+              list="sender-names"
+              placeholder={props.senderDefault || "PTA"}
+              value={c.fromName}
+              maxLength={64}
+              disabled={!editable}
+              onChange={(e) => setField("fromName", e.target.value)}
+            />
+            <datalist id="sender-names">
+              {[props.senderDefault, ...props.senderSuggestions].filter(Boolean).map((n) => (
+                <option key={n} value={n} />
+              ))}
+            </datalist>
+          </div>
+        </div>
+        <label htmlFor="preheader">
+          Inbox Preview Text <span className="muted" style={{ fontWeight: 400 }}>(optional, shown after the subject in most inboxes)</span>
+        </label>
+        <input id="preheader" placeholder="One line that sums up the message" value={c.preheader} maxLength={200} disabled={!editable} onChange={(e) => setField("preheader", e.target.value)} />
+
+        <span className="field-label">Email Message</span>
+        <div className="editor-box editor" style={Object.fromEntries(COLOR_TOKENS.map((t) => [`--pal-${t}`, props.palette[t]]))}>
+          {editor && editable && <Toolbar editor={editor} palette={props.palette} onInsert={(k) => setModal({ kind: k })} />}
+          <EditorContent editor={editor} />
+        </div>
+        <p className="muted hint">The logo header and the footer (mailing address and unsubscribe link) are added automatically.</p>
+        {editor && editable && <BlockPanel editor={editor} onReplaceImage={(t) => setModal({ kind: "image", replace: t })} />}
+
+        {editable && (
+          <>
+            <span className="field-label">Images</span>
+            <Dropzone onBrowse={() => setModal({ kind: "image" })} onFile={(file) => setModal({ kind: "image", file })} />
+          </>
+        )}
+        <label className="check">
+          <input type="checkbox" checked={c.showInArchive} disabled={!editable} onChange={(e) => setField("showInArchive", e.target.checked)} />
+          Show in the public message archive after sending
+        </label>
+      </section>
 
       {modal?.kind === "image" || modal?.kind === "twoColumn" ? (
         <Modal title="Choose an image" wide onClose={() => setModal(null)}>
-          <MediaLibrary onPick={insertAsset} />
+          <MediaLibrary onPick={insertAsset} initialFile={modal.file} />
         </Modal>
       ) : null}
       {modal?.kind === "button" && editor && (
@@ -501,20 +700,63 @@ export default function Composer(props: {
       {modal?.kind === "template" && editor && (
         <TemplateModal campaignId={c.id} beforeSave={() => saveRef.current()} onClose={() => setModal(null)} onSaved={(n) => setNotice(`Saved template "${n}".`)} />
       )}
+      {modal?.kind === "recipients" && <RecipientsModal campaignId={c.id} beforeLoad={() => saveRef.current()} onClose={() => setModal(null)} />}
+      {modal?.kind === "preview" && (
+        <Modal title="Preview" wide onClose={() => setModal(null)}>
+          <div className="row">
+            <button type="button" className={width === 600 ? "small" : "secondary small"} onClick={() => setWidth(600)}>
+              Desktop
+            </button>
+            <button type="button" className={width === 375 ? "small" : "secondary small"} onClick={() => setWidth(375)}>
+              Mobile
+            </button>
+            <button type="button" className={!dark ? "small" : "secondary small"} onClick={() => setDark(false)}>
+              Light
+            </button>
+            <button type="button" className={dark ? "small" : "secondary small"} onClick={() => setDark(true)}>
+              Dark
+            </button>
+          </div>
+          {preview ? (
+            <>
+              <p className="muted" style={{ fontSize: 13 }}>
+                {(preview.bytes / 1024).toFixed(1)} KB · {preview.recipients} recipient{preview.recipients === 1 ? "" : "s"}
+              </p>
+              {preview.checks.map((x) => (
+                <p key={x.code} className={x.level === "block" ? "error" : "warn"} style={{ margin: "4px 0" }}>
+                  {x.message}
+                </p>
+              ))}
+              <div style={{ overflowX: "auto" }}>
+                <iframe
+                  title="Email preview"
+                  sandbox=""
+                  srcDoc={preview.html}
+                  style={{ width, maxWidth: "none", height: 800, border: "1px solid var(--border)", borderRadius: 8, background: dark ? "#111418" : "#fff", display: "block", margin: "0 auto" }}
+                />
+              </div>
+            </>
+          ) : (
+            <p className="muted">Rendering…</p>
+          )}
+        </Modal>
+      )}
       {modal?.kind === "send" && (
-        <Modal title="Send newsletter" onClose={() => setModal(null)}>
+        <Modal title="Send message" onClose={() => setModal(null)}>
           <p>
             <strong>{c.subject || "(no subject)"}</strong>
           </p>
           <p>
-            To: {segment?.name ?? "All confirmed subscribers"} · <strong>{preview?.recipients ?? "?"}</strong> recipients
+            From: {c.fromName.trim() || props.senderDefault}
+            <br />
+            To: {chosen.length ? chosen.map((s) => s.name).join(", ") : "nobody selected"} · <strong>{preview?.recipients ?? "?"}</strong> recipients
           </p>
           {preview?.checks.map((x) => (
             <p key={x.code} className={x.level === "block" ? "error" : "warn"}>
               {x.message}
             </p>
           ))}
-          <p className="muted">Sending can&apos;t be undone. Tip: send a test to yourself first.</p>
+          <p className="muted">Sending can&apos;t be undone. Tip: use Send Preview to email yourself a copy first.</p>
           <div className="row">
             <button type="button" disabled={busy || blockers.length > 0 || !preview?.recipients} onClick={() => action("send", "Sending to {n} recipients.")}>
               Send to {preview?.recipients ?? 0} recipients
@@ -526,6 +768,50 @@ export default function Composer(props: {
         </Modal>
       )}
     </div>
+  );
+}
+
+function RecipientsModal(props: { campaignId: string; beforeLoad: () => Promise<void>; onClose: () => void }) {
+  const [data, setData] = useState<{ total: number; limit: number; recipients: { email: string; school: string | null }[] } | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    (async () => {
+      await props.beforeLoad();
+      setData(await api(`/api/campaigns/${props.campaignId}/recipients`));
+    })().catch((e) => setError((e as Error).message));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.campaignId]);
+  return (
+    <Modal title="Selected recipients" onClose={props.onClose}>
+      {error && <p className="error">{error}</p>}
+      {!data && !error && <p className="muted">Loading…</p>}
+      {data && (
+        <>
+          <p className="muted">
+            {data.total} {data.total === 1 ? "family" : "families"}
+            {data.total > data.limit ? `; showing the first ${data.limit}` : ""}. Unconfirmed, unsubscribed and do-not-mail addresses are left out.
+          </p>
+          <div style={{ maxHeight: 420, overflowY: "auto" }}>
+            <table className="list">
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>School</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.recipients.map((r) => (
+                  <tr key={r.email}>
+                    <td>{r.email}</td>
+                    <td className="muted">{r.school ?? ""}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </Modal>
   );
 }
 

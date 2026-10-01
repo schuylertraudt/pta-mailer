@@ -1,10 +1,11 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, max, ne } from "drizzle-orm";
 import { z } from "zod";
 import type { Db, DbOrTx } from "@/db";
 import { campaigns, officers, segments } from "@/db/schema";
 import { EMPTY_DOC } from "@/lib/editor/model";
 import { sanitizeDoc } from "@/lib/editor/sanitize";
 import { env } from "@/lib/env";
+import { cleanSenderName } from "@/lib/mail/sender";
 import { getTemplate } from "@/lib/templates/service";
 
 export class CampaignError extends Error {
@@ -23,13 +24,14 @@ export const campaignPatch = z.object({
   subject: z.string().max(200).optional(),
   preheader: z.string().max(200).optional(),
   bodyJson: z.unknown().optional(),
-  segmentId: z.uuid().nullable().optional(),
+  segmentIds: z.array(z.uuid()).max(100).optional(),
+  fromName: z.string().max(200).transform(cleanSenderName).optional(),
   showInArchive: z.boolean().optional(),
 });
 
 export async function getCampaign(db: DbOrTx, id: string) {
   const [c] = await db.select().from(campaigns).where(eq(campaigns.id, id));
-  if (!c) throw new CampaignError(404, "Newsletter not found");
+  if (!c) throw new CampaignError(404, "Message not found");
   return c;
 }
 
@@ -39,6 +41,7 @@ export async function listCampaigns(db: DbOrTx) {
       id: campaigns.id,
       subject: campaigns.subject,
       status: campaigns.status,
+      segmentIds: campaigns.segmentIds,
       updatedAt: campaigns.updatedAt,
       sentAt: campaigns.sentAt,
       createdBy: officers.email,
@@ -46,6 +49,18 @@ export async function listCampaigns(db: DbOrTx) {
     .from(campaigns)
     .leftJoin(officers, eq(officers.id, campaigns.createdBy))
     .orderBy(desc(campaigns.updatedAt));
+}
+
+/** Sender names used on earlier messages, most recent first, to suggest in the composer. */
+export async function listSenderNames(db: DbOrTx, limit = 20) {
+  const rows = await db
+    .select({ name: campaigns.fromName, last: max(campaigns.updatedAt) })
+    .from(campaigns)
+    .where(ne(campaigns.fromName, ""))
+    .groupBy(campaigns.fromName)
+    .orderBy(desc(max(campaigns.updatedAt)))
+    .limit(limit);
+  return rows.map((r) => r.name);
 }
 
 export async function createCampaign(db: Db, officerId: string, opts: { templateId?: string | null } = {}) {
@@ -74,11 +89,12 @@ export async function updateCampaign(db: Db, id: string, raw: z.input<typeof cam
   const patch = campaignPatch.parse(raw);
   return db.transaction(async (tx) => {
     const [c] = await tx.select().from(campaigns).where(eq(campaigns.id, id)).for("update");
-    if (!c) throw new CampaignError(404, "Newsletter not found");
-    if (!EDITABLE.includes(c.status as never)) throw new CampaignError(409, "This newsletter has already been sent and can't be edited.");
-    if (patch.segmentId) {
-      const [seg] = await tx.select().from(segments).where(eq(segments.id, patch.segmentId));
-      if (!seg) throw new CampaignError(400, "Unknown audience segment");
+    if (!c) throw new CampaignError(404, "Message not found");
+    if (!EDITABLE.includes(c.status as never)) throw new CampaignError(409, "This message has already been sent and can't be edited.");
+    if (patch.segmentIds) {
+      patch.segmentIds = [...new Set(patch.segmentIds)];
+      const found = patch.segmentIds.length ? await tx.select({ id: segments.id }).from(segments).where(inArray(segments.id, patch.segmentIds)) : [];
+      if (found.length !== patch.segmentIds.length) throw new CampaignError(400, "Unknown audience");
     }
     const [row] = await tx
       .update(campaigns)
@@ -86,7 +102,8 @@ export async function updateCampaign(db: Db, id: string, raw: z.input<typeof cam
         ...(patch.subject !== undefined && { subject: patch.subject }),
         ...(patch.preheader !== undefined && { preheader: patch.preheader }),
         ...(patch.bodyJson !== undefined && { bodyJson: sanitizeDoc(patch.bodyJson, env().STORAGE_PUBLIC_BASE_URL) }),
-        ...(patch.segmentId !== undefined && { segmentId: patch.segmentId }),
+        ...(patch.segmentIds !== undefined && { segmentIds: patch.segmentIds }),
+        ...(patch.fromName !== undefined && { fromName: patch.fromName }),
         ...(patch.showInArchive !== undefined && { showInArchive: patch.showInArchive }),
         status: "draft",
         approvedBy: null,
@@ -106,7 +123,7 @@ async function transition(db: Db, id: string, from: readonly string[], set: Part
     .returning();
   if (!row) {
     const c = await getCampaign(db, id);
-    throw new CampaignError(409, `Newsletter is ${c.status.replace("_", " ")}; that action isn't available.`);
+    throw new CampaignError(409, `Message is ${c.status.replace("_", " ")}; that action isn't available.`);
   }
   return row;
 }
@@ -124,5 +141,5 @@ export async function deleteDraft(db: Db, id: string) {
     .delete(campaigns)
     .where(and(eq(campaigns.id, id), inArray(campaigns.status, ["draft", "pending_approval", "approved"])))
     .returning({ id: campaigns.id });
-  if (!row) throw new CampaignError(409, "Only unsent newsletters can be deleted.");
+  if (!row) throw new CampaignError(409, "Only unsent messages can be deleted.");
 }
