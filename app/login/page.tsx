@@ -1,4 +1,5 @@
 import { signIn } from "@/auth";
+import PublicShell, { styles as s } from "@/components/public/PublicShell";
 
 const MESSAGES: Record<string, string> = {
   not_allowed: "That Google account isn't on the team list. Ask a PTA admin to add your email.",
@@ -8,27 +9,34 @@ const MESSAGES: Record<string, string> = {
   AccessDenied: "Access denied.",
 };
 
+export const metadata = { title: "Team login" };
+
 export default async function LoginPage(props: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await props.searchParams;
   return (
-    <main className="narrow">
-      <h1>PTA team login</h1>
-      <p className="muted">Committee members and coordinators log in with their Google account. Parents don&apos;t need to log in.</p>
-      {error && (
-        <p className="error" role="alert">
-          {MESSAGES[error] ?? "Login failed."}
+    <PublicShell hideLogin>
+      <div className={s.intro}>
+        <h1 className={s.h1}>PTA team login</h1>
+        <p className={s.lead}>
+          Committee members and coordinators log in with their Google account. Parents don&apos;t need to log in.
         </p>
-      )}
+      </div>
       <form
+        className={s.card}
         action={async () => {
           "use server";
           await signIn("google", { redirectTo: "/admin" });
         }}
       >
-        <button type="submit" className="full">
+        {error && (
+          <p className={s.error} role="alert">
+            {MESSAGES[error] ?? "Login failed."}
+          </p>
+        )}
+        <button type="submit" className={s.button}>
           Sign in with Google
         </button>
       </form>
-    </main>
+    </PublicShell>
   );
 }

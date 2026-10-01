@@ -1,0 +1,139 @@
+/* Public pages (parents): light theme from the PTA News signup design. */
+.page {
+  --bg: #f5f6f8;
+  --fg: #16202b;
+  --body: #3f4a56;
+  --muted: #4a5563;
+  --border: #dde1e6;
+  --input-border: #b8c0ca;
+  --primary: #1d3f66;
+  --primary-hover: #122a45;
+  --tint: #e4ecf5;
+  --danger: #b42318;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--fg);
+  color-scheme: light;
+}
+.page a { color: var(--primary); }
+.page a:hover { color: var(--primary-hover); }
+
+.header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 14px 20px;
+  background: #fff;
+  border-bottom: 1px solid #e3e6ea;
+}
+.nav { display: flex; gap: 24px; align-items: center; font-size: 14px; }
+.nav a { text-decoration: none; font-weight: 500; padding: 12px 0; }
+.navArchive { display: none; }
+
+.main { flex-grow: 1; padding: 32px 20px 40px; display: flex; justify-content: center; }
+.column { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 24px; }
+
+.intro { display: flex; flex-direction: column; gap: 10px; }
+.h1 { margin: 0; font-size: 28px; line-height: 1.2; font-weight: 700; letter-spacing: -0.02em; }
+.lead { margin: 0; font-size: 16px; line-height: 1.55; color: var(--body); }
+
+.card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-shadow: 0 1px 2px rgba(22, 32, 43, 0.04);
+}
+.field { display: flex; flex-direction: column; gap: 8px; }
+.label { font-size: 15px; font-weight: 600; }
+.input {
+  height: 48px;
+  box-sizing: border-box;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 16px;
+  color: var(--fg);
+  background: #fff;
+  width: 100%;
+}
+select.input {
+  appearance: none;
+  padding-right: 40px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2316202B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+.input:focus, .button:focus-visible, .page a:focus-visible {
+  outline: 3px solid rgba(29, 63, 102, 0.35);
+  outline-offset: 2px;
+}
+.button {
+  height: 52px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+}
+.button:hover { background: var(--primary-hover); }
+.button:disabled { opacity: 0.6; cursor: not-allowed; }
+.note { margin: 0; font-size: 14px; line-height: 1.5; color: var(--muted); text-align: center; }
+.small { margin: 0; font-size: 14px; line-height: 1.55; color: var(--muted); }
+.error { margin: 0; font-size: 14px; color: var(--danger); }
+.linkButton {
+  background: none;
+  border: 0;
+  padding: 12px 0;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.linkButton:hover { color: var(--primary-hover); }
+.linkRow { display: flex; gap: 20px; flex-wrap: wrap; font-size: 14px; font-weight: 500; }
+.linkRow a { padding: 12px 0; }
+
+.icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  background: var(--tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.status { display: flex; flex-direction: column; gap: 20px; align-items: flex-start; padding-top: 24px; }
+
+.hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.listItem a { font-weight: 600; text-decoration: none; font-size: 16px; }
+.listItem a:hover { text-decoration: underline; }
+.meta { margin-top: 4px; font-size: 14px; color: var(--muted); }
+
+@media (min-width: 640px) {
+  .header { padding: 18px 32px; }
+  .nav { font-size: 15px; }
+  .navArchive { display: inline; }
+  .main { padding: 72px 24px 64px; }
+  .column { gap: 28px; }
+  .intro { gap: 12px; }
+  .h1 { font-size: 36px; line-height: 1.15; }
+  .lead { font-size: 17px; }
+  .card { padding: 28px; gap: 20px; }
+  .button { height: 48px; }
+  .status { padding-top: 0; }
+}
