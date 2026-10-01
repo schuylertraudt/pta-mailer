@@ -178,6 +178,15 @@ sudo chmod 640 /etc/pta-mailer.env
 
 Avoid `$` and backticks in values; the hex secrets above never contain them.
 
+Check that every `<...>` placeholder was replaced. This must print nothing:
+
+```bash
+sudo grep -n '[<>]' /etc/pta-mailer.env | grep -v EMAIL_FROM
+```
+
+A leftover placeholder makes step 8's last command fail with "syntax error
+near unexpected token" and "DATABASE_URL is not set".
+
 ## 8. Install, build and set up the database
 
 ```bash
