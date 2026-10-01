@@ -154,7 +154,7 @@ EMAIL_FROM="PTA News <news@mail.atreapta.com>"
 # A mailbox someone reads. Replies and privacy requests go here.
 EMAIL_REPLY_TO=pta@atreapta.com
 
-# Images are stored on this server and served by Caddy (step 10).
+# Images are stored on this server and served by nginx (step 10).
 STORAGE_DRIVER=local
 STORAGE_LOCAL_DIR=/var/lib/pta-mailer/media
 STORAGE_PUBLIC_BASE_URL=https://mail.atreapta.com/media
@@ -243,44 +243,74 @@ systemctl status pta-web pta-worker --no-pager
 curl -sI http://127.0.0.1:3000 | head -1     # should print HTTP/1.1 200 OK
 ```
 
-The website only listens on the server itself; Caddy (next step) puts it on
+The website only listens on the server itself; nginx (next step) puts it on
 the internet with HTTPS.
 
-## 10. HTTPS with Caddy
+## 10. HTTPS with nginx
 
-Caddy gets and renews the HTTPS certificate automatically and serves the
-uploaded images.
+nginx (already on your server) passes visitors to the app and serves the
+uploaded images straight from disk. Certbot gets a free HTTPS certificate and
+renews it automatically.
 
-```bash
-sudo apt -y install debian-keyring debian-archive-keyring apt-transport-https
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
-sudo apt update && sudo apt -y install caddy
-```
-
-Replace Caddy's configuration:
+**Add the site:**
 
 ```bash
-sudo tee /etc/caddy/Caddyfile > /dev/null <<'EOF'
-mail.atreapta.com {
-	encode zstd gzip
+sudo tee /etc/nginx/sites-available/pta-mailer > /dev/null <<'NGINX'
+server {
+    listen 80;
+    listen [::]:80;
+    server_name mail.atreapta.com;
 
-	# Uploaded newsletter images. Read-only, no folder listings.
-	handle_path /media/* {
-		root * /var/lib/pta-mailer/media
-		file_server
-		header Cache-Control "public, max-age=31536000, immutable"
-	}
+    # Image uploads are up to 10 MB (nginx's default limit is 1 MB).
+    client_max_body_size 12m;
 
-	# Everything else goes to the app.
-	handle {
-		reverse_proxy 127.0.0.1:3000
-	}
+    # Uploaded newsletter images, straight from disk. No folder listings.
+    location /media/ {
+        alias /var/lib/pta-mailer/media/;
+        autoindex off;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    # Everything else goes to the app.
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        # The visitor's real address, replacing anything they sent, so the
+        # signup rate limit can't be dodged with a fake header.
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
 }
-EOF
+NGINX
 
-sudo systemctl reload caddy
+sudo ln -s /etc/nginx/sites-available/pta-mailer /etc/nginx/sites-enabled/pta-mailer
+sudo nginx -t && sudo systemctl reload nginx
 ```
+
+`sudo nginx -t` must say "syntax is ok" and "test is successful" before the
+reload happens. This adds a new site next to whatever nginx already serves; it
+doesn't change your other sites.
+
+If `nginx -t` complains about `[::]:80`, your server has no IPv6: delete the
+`listen [::]:80;` line (`sudo nano /etc/nginx/sites-available/pta-mailer`) and
+run `sudo nginx -t && sudo systemctl reload nginx` again.
+
+**Add HTTPS:**
+
+```bash
+# Skip this line if certbot is already installed (check with: certbot --version).
+sudo apt -y install certbot python3-certbot-nginx
+
+sudo certbot --nginx -d mail.atreapta.com --redirect
+```
+
+Certbot asks for an email address (for expiry warnings; use a PTA mailbox) and
+to accept its terms. It then adds the certificate to the site above, redirects
+`http://` to `https://`, and renews the certificate automatically. It needs
+step 1's DNS record to be working and port 80 open.
 
 ## 11. Check it
 
@@ -390,7 +420,8 @@ From then on, `git pull` in "Updating to a new version" follows `main`.
 | --- | --- |
 | Browser shows "502 Bad Gateway" | The website service isn't running: `systemctl status pta-web`, then `sudo journalctl -u pta-web -n 50` |
 | Logs say "Invalid environment configuration" | A setting in `/etc/pta-mailer.env` is missing or malformed; the message names it |
-| No padlock / certificate error | DNS doesn't point at the server yet (step 1), or ports 80/443 are blocked (step 2). `sudo journalctl -u caddy -n 50` says which |
+| No padlock / certificate error | DNS doesn't point at the server yet (step 1), or ports 80/443 are blocked (step 2). Run `sudo certbot --nginx -d mail.atreapta.com --redirect` again; its message says which |
+| Image upload fails with "413" or "Request Entity Too Large" | `client_max_body_size 12m;` is missing from the nginx site (step 10) |
 | Build stops with "JavaScript heap out of memory" or "Killed" | Not enough RAM: add swap (step 2) and build again |
-| Images in newsletters don't show | `STORAGE_PUBLIC_BASE_URL` must be `https://<your domain>/media`, and the Caddy `/media/*` block must be present |
+| Images in newsletters don't show | `STORAGE_PUBLIC_BASE_URL` must be `https://<your domain>/media`, and the nginx `location /media/` block must be present (step 10) |
 | `git pull` asks for a username or says "Repository not found" | The repository was made private. Make it public again, or ask a developer to set up read access for the server |

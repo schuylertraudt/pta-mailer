@@ -48,7 +48,7 @@ approval), so start those early.
 `/etc/pta-mailer.env`).
 
 If the site's address ever changes from `mail.atreapta.com`, update everywhere
-it appears: `APP_URL` and `STORAGE_PUBLIC_BASE_URL`, the Caddy configuration,
+it appears: `APP_URL` and `STORAGE_PUBLIC_BASE_URL`, the nginx site (`server_name`) and certificate,
 the Google redirect URI and privacy link (1.2, 1.4), and the SNS subscription
 endpoint (2.7).
 
