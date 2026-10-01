@@ -34,3 +34,20 @@ describe("segments", () => {
     }
   });
 });
+
+describe("school audiences", () => {
+  it("creates one audience per school, once, without clobbering existing ones", async () => {
+    const { ensureSchoolSegments, listSegmentsWithCounts } = await import("@/lib/segments/service");
+    const { SCHOOLS } = await import("@/lib/schools");
+    await createSegment(db, { name: "Karigon families", rule: "school=Karigon" });
+    await createSegment(db, { name: "Okte", rule: "committee=Okte helpers" });
+    await ensureSchoolSegments(db);
+    await ensureSchoolSegments(db);
+    const segs = await listSegmentsWithCounts(db);
+    const rules = segs.map((s) => s.rule);
+    for (const s of SCHOOLS.filter((x) => x !== "Okte")) expect(rules.filter((r) => r === `school=${s}`)).toHaveLength(1);
+    expect(segs.find((s) => s.rule === "school=Karigon")!.name).toBe("Karigon families");
+    expect(segs.filter((s) => s.name === "Okte")).toHaveLength(1);
+    expect(segs.every((s) => s.recipients === 0)).toBe(true);
+  });
+});

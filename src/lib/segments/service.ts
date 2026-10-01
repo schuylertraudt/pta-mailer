@@ -1,10 +1,11 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { DbOrTx } from "@/db";
 import { segments, subscriberSegments, subscribers } from "@/db/schema";
 import { countRecipients } from "@/lib/campaigns/recipients";
 import { normalizeEmail } from "@/lib/email";
 import { formatSegmentRule, parseSegmentRule } from "@/lib/segment-rule";
+import { SCHOOLS } from "@/lib/schools";
 
 export const segmentInput = z.object({
   name: z.string().trim().min(1).max(100),
@@ -21,6 +22,21 @@ export const segmentInput = z.object({
 export async function listSegmentsWithCounts(db: DbOrTx) {
   const rows = await db.select().from(segments).orderBy(segments.name);
   return Promise.all(rows.map(async (s) => ({ ...s, recipients: await countRecipients(db, s.id) })));
+}
+
+/**
+ * One audience per school, so each school can be picked in the composer from
+ * day one. Idempotent; skips a school if any audience already has its rule or
+ * its name.
+ */
+export async function ensureSchoolSegments(db: DbOrTx) {
+  for (const school of SCHOOLS) {
+    const rule = `school=${school}`;
+    await db.execute(sql`
+      insert into ${segments} (name, rule)
+      select ${school}, ${rule}
+      where not exists (select 1 from ${segments} where rule = ${rule} or name = ${school})`);
+  }
 }
 
 export async function createSegment(db: DbOrTx, raw: z.input<typeof segmentInput>) {
