@@ -7,6 +7,8 @@ const MESSAGES: Record<string, string> = {
   account_mismatch:
     "Your email is linked to a different Google account. Ask an admin to re-add you if your account changed.",
   AccessDenied: "Access denied.",
+  Configuration:
+    "Login isn't set up correctly on the server. A developer can find the reason with: sudo journalctl -u pta-web -n 50",
 };
 
 export const metadata = { title: "Team login" };

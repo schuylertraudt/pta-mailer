@@ -4,6 +4,11 @@ import { getDb } from "@/db";
 import { officerAdapter } from "@/lib/auth/adapter";
 import { authorizeGoogleSignIn } from "@/lib/auth/sign-in";
 
+// Behind a reverse proxy (nginx), Next.js sees requests as http://localhost:<port>.
+// Auth.js would then give Google a localhost callback URL and redirect errors
+// there. Pin it to the public address unless AUTH_URL is set explicitly.
+process.env.AUTH_URL ??= process.env.APP_URL;
+
 export const { handlers, auth, signIn, signOut } = NextAuth(() => ({
   adapter: officerAdapter(getDb()),
   trustHost: true,
