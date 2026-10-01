@@ -19,6 +19,9 @@ export default function PublicShell(props: { children: React.ReactNode; hideLogi
       <main className={s.main}>
         <div className={s.column}>{props.children}</div>
       </main>
+      <footer className={s.footer}>
+        <Link href="/privacy">Privacy</Link>
+      </footer>
     </div>
   );
 }

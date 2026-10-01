@@ -137,3 +137,17 @@ select.input {
   .button { height: 48px; }
   .status { padding-top: 0; }
 }
+
+.footer {
+  padding: 24px 20px 32px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+.footer a { color: var(--muted); }
+
+.prose { display: flex; flex-direction: column; gap: 14px; font-size: 16px; line-height: 1.6; color: var(--body); }
+.prose h2 { margin: 12px 0 0; font-size: 19px; line-height: 1.3; color: var(--fg); }
+.prose p, .prose ul { margin: 0; }
+.prose ul { padding-left: 22px; display: flex; flex-direction: column; gap: 6px; }
+.prose strong { color: var(--fg); font-weight: 600; }

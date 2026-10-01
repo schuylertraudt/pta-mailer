@@ -45,8 +45,12 @@ Time: about 15 minutes. Cost: free.
 3. **Audience:** choose **External**. (Internal only works if every team member
    has an address in the PTA's own Google Workspace.)
 4. **Contact information:** the PTA role address. Agree to the policy, **Create**.
-5. **Branding** page (all optional):
+5. **Branding** page:
    - Application home page: `https://mailer.pta.example.org`.
+   - Application privacy policy link: `https://mailer.pta.example.org/privacy`
+     (the app serves this page; edit the organization name and date in
+     `src/lib/site.ts`). Deploy the app before publishing so the link works.
+   - Terms of service link: optional, leave empty.
    - Authorized domains: the PTA's domain (e.g. `pta.example.org`) once the app
      runs on it. If you're still on a temporary `*.vercel.app` address, leave
      this empty.
