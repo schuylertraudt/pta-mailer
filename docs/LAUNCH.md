@@ -1,7 +1,8 @@
 # Launch checklist
 
 Work through this top to bottom before the first real send. Each item names
-where the setting lives. `pta.example.org` stands for the PTA's domain and
+where the setting lives. Click-by-click instructions for Google login and
+Amazon SES are in [SETUP_GOOGLE_AND_AMAZON.md](SETUP_GOOGLE_AND_AMAZON.md). `pta.example.org` stands for the PTA's domain and
 `mailer.pta.example.org` for wherever this app is hosted.
 
 ## 1. Sending domain DNS (SPF, DKIM, DMARC)
