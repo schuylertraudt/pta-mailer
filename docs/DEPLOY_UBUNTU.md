@@ -33,11 +33,10 @@ Commands are run as a user with `sudo` rights, over SSH. Lines starting with
 - Nothing on GitHub: the code (`schuylertraudt/pta-mailer`) is public, so the
   server downloads it directly.
 
-**About the code branch:** the app is currently on the branch
-`ccr-6d2f924f-jf1u7k`. The cleanest setup is to merge it into `main` on GitHub
-first (open a pull request from that branch and merge it), then use `main`
-below. If you don't merge it, use that branch name wherever this guide says
-`main`.
+**About the code branch:** all of the app's code is on the branch
+`ccr-6d2f924f-jf1u7k`; the repository has no `main` branch yet. Step 6 uses
+that branch. If the code is later moved to `main`, see "Switching to the main
+branch" near the end.
 
 ---
 
@@ -125,7 +124,7 @@ The repository is public, so the server can download it without any GitHub
 login or key:
 
 ```bash
-sudo -u pta -H git clone --branch main https://github.com/schuylertraudt/pta-mailer.git /opt/pta-mailer/app
+sudo -u pta -H git clone --branch ccr-6d2f924f-jf1u7k https://github.com/schuylertraudt/pta-mailer.git /opt/pta-mailer/app
 ```
 
 The server can only download; it can't change anything on GitHub.
@@ -364,6 +363,18 @@ sudo systemctl restart pta-web pta-worker
 The site is unavailable for a few seconds during the restart. Running the
 migrate step every time is safe; it only applies changes that haven't been
 applied yet.
+
+## Switching to the main branch
+
+Only needed if the code is later merged into a `main` branch on GitHub. Then:
+
+```bash
+cd /opt/pta-mailer/app
+sudo -u pta -H git fetch origin main
+sudo -u pta -H git checkout -B main origin/main
+```
+
+From then on, `git pull` in "Updating to a new version" follows `main`.
 
 ## Keeping the server healthy
 
