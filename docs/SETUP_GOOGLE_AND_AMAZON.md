@@ -100,7 +100,8 @@ log in, and Google limits how long their approval lasts.
 2. Application type: **Web application**. Name: `PTA Mailer`.
 3. **Authorized redirect URIs** → add both:
    - `https://mail.atreapta.com/api/auth/callback/google`
-   - `http://localhost:3000/api/auth/callback/google` (for local testing)
+   - only if a developer runs the app on their own computer:
+     `http://localhost:3000/api/auth/callback/google`. Otherwise skip it.
 
    The address must match exactly: `https`, no trailing slash. If the app
    later moves to a new address, add the new redirect URI here too.
@@ -109,13 +110,17 @@ log in, and Google limits how long their approval lasts.
 
 ### 1.5 Give the values to the app
 
-| Variable | Value |
-| --- | --- |
-| `AUTH_GOOGLE_ID` | the Client ID (ends in `.apps.googleusercontent.com`) |
-| `AUTH_GOOGLE_SECRET` | the Client secret |
-| `AUTH_SECRET` | a random string: run `openssl rand -base64 32`, or use a password manager's generator (32+ characters) |
-| `APP_URL` | `https://mail.atreapta.com` (no trailing slash) |
-| `BOOTSTRAP_ADMIN_EMAIL` | the Google email of the first admin |
+`APP_URL` and `AUTH_SECRET` are already in `/etc/pta-mailer.env` from the
+deployment guide. Add these three lines to the end of that file
+(`sudo nano /etc/pta-mailer.env`), filling in your values:
+
+```bash
+AUTH_GOOGLE_ID=<the Client ID; ends in .apps.googleusercontent.com>
+AUTH_GOOGLE_SECRET=<the Client secret>
+BOOTSTRAP_ADMIN_EMAIL=<the Google email address of the first admin>
+```
+
+Replace each `<...>` completely, angle brackets included.
 
 ### 1.6 First login
 
@@ -166,7 +171,9 @@ registered or hosted: GoDaddy, Cloudflare, Google Domains/Squarespace, etc.).
 2. Identity type **Domain**; domain `mail.atreapta.com`.
 3. Tick **Use a custom MAIL FROM domain** → `bounce.mail.atreapta.com`;
    behavior on MX failure: **Use default MAIL FROM**.
-4. **Easy DKIM**, key length **RSA_2048_BIT**, publish DNS records **enabled**.
+4. **Easy DKIM**, key length **RSA_2048_BIT**. If it offers to "publish DNS
+   records to Route 53", leave that off unless your domain's DNS is hosted in
+   Amazon Route 53; you'll add the records yourself in step 6.
 5. **Create identity.** SES shows the DNS records to add.
 6. In your DNS provider, add every record SES lists:
    - three **CNAME** records for DKIM (`xxxx._domainkey.mail.atreapta.com`)
@@ -177,9 +184,14 @@ registered or hosted: GoDaddy, Cloudflare, Google Domains/Squarespace, etc.).
 
    Some DNS providers add the domain name automatically, so you enter only the
    part before `.atreapta.com` in the name field.
-7. Add a **DMARC** record (SES doesn't list this one):
-   - TXT, name `_dmarc.atreapta.com`, value
-     `v=DMARC1; p=none; rua=mailto:dmarc@atreapta.com`
+7. Add a **DMARC** record (SES doesn't list this one), **unless one already
+   exists**: look for a TXT record named `_dmarc` in your DNS. If there is one,
+   leave it; a domain must have only one.
+   - TXT, name `_dmarc.atreapta.com`, value `v=DMARC1; p=none`
+   - Optional: to receive daily reports on mail sent as your domain, use
+     `v=DMARC1; p=none; rua=mailto:dmarc@atreapta.com` instead. The report
+     address must be a mailbox **on atreapta.com**; mail providers won't send
+     reports to an address on another domain such as gmail.com.
 8. Wait for SES to show the identity as **Verified** and DKIM as
    **Successful** (usually under an hour; up to 72).
 
@@ -304,20 +316,29 @@ works. This adds the email-based unsubscribe that some other mail programs use.
 
 ### 2.9 Give the values to the app
 
-| Variable | Value |
-| --- | --- |
-| `EMAIL_PROVIDER` | `ses` |
-| `EMAIL_FROM` | `"PTA News <news@mail.atreapta.com>"` (must be on the verified domain) |
-| `EMAIL_REPLY_TO` | optional: a mailbox someone reads, e.g. `pta@atreapta.com` |
-| `SES_REGION` | `us-east-1` (the region you chose) |
-| `SES_ACCESS_KEY_ID` | from 2.5 |
-| `SES_SECRET_ACCESS_KEY` | from 2.5 |
-| `SES_CONFIGURATION_SET` | `pta-newsletter` |
-| `SNS_TOPIC_ARNS` | the topic ARN from 2.3 |
-| `SEND_RATE_PER_SECOND` | your SES max send rate, e.g. `14` |
-| `UNSUBSCRIBE_MAILTO` | from 2.8, or leave empty |
+`EMAIL_FROM` and `EMAIL_REPLY_TO` are already in `/etc/pta-mailer.env` from
+the deployment guide. Add these lines to the end of that file
+(`sudo nano /etc/pta-mailer.env`), filling in your values:
 
-Restart the app after setting them, then do 2.7.
+```bash
+EMAIL_PROVIDER=ses
+SES_REGION=us-east-1
+SES_ACCESS_KEY_ID=<Access key ID from 2.5>
+SES_SECRET_ACCESS_KEY=<Secret access key from 2.5>
+SES_CONFIGURATION_SET=pta-newsletter
+SNS_TOPIC_ARNS=<topic ARN from 2.3>
+SEND_RATE_PER_SECOND=<max send rate from 2.6, e.g. 14>
+UNSUBSCRIBE_MAILTO=unsubscribe@mail.atreapta.com
+```
+
+Leave out the `UNSUBSCRIBE_MAILTO` line if you skipped 2.8. Replace each
+`<...>` completely, then check none are left (this must print nothing):
+
+```bash
+sudo grep -n '[<>]' /etc/pta-mailer.env | grep -v EMAIL_FROM
+```
+
+Restart the app (`sudo systemctl restart pta-web pta-worker`), then do 2.7.
 
 ### 2.10 Prove it works
 
@@ -331,10 +352,15 @@ Restart the app after setting them, then do 2.7.
 3. **Complaints:** do the same with `complaint@simulator.amazonses.com`; it
    should show **Marked as spam**.
 
-If 2 or 3 don't change status: check the SNS subscription is **Confirmed**,
-`SES_CONFIGURATION_SET` matches the set name, and the hosting logs for
-`/api/webhooks/ses` (a `403 Rejected: topic not allowed` means `SNS_TOPIC_ARNS`
-doesn't match).
+If 2 or 3 don't change status: check the SNS subscription is **Confirmed** and
+`SES_CONFIGURATION_SET` matches the set name, then look at the website's log:
+`sudo journalctl -u pta-web -n 50 --no-pager`. A `403 Rejected: topic not
+allowed` there means `SNS_TOPIC_ARNS` doesn't match the topic's ARN exactly.
+
+If **Send test to me** doesn't arrive, the same log shows Amazon's error. The
+common ones: "Email address is not verified" (still in the sandbox, 2.6, or
+`EMAIL_FROM` isn't on `mail.atreapta.com`), or "security token ... invalid"
+(the access key in 2.9 was copied wrong).
 
 ---
 
@@ -342,16 +368,15 @@ doesn't match).
 
 | Variable | From |
 | --- | --- |
-| `APP_URL` | your app's address |
-| `AUTH_SECRET` | random, 1.5 |
+| `APP_URL`, `AUTH_SECRET`, `EMAIL_FROM`, `EMAIL_REPLY_TO` | already set in the deployment guide, step 7 |
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google, 1.4 |
 | `BOOTSTRAP_ADMIN_EMAIL` | first admin's Google email |
-| `EMAIL_PROVIDER`, `EMAIL_FROM`, `EMAIL_REPLY_TO` | 2.9 |
+| `EMAIL_PROVIDER` | `ses`, 2.9 |
 | `SES_REGION`, `SES_ACCESS_KEY_ID`, `SES_SECRET_ACCESS_KEY` | Amazon, 2.1 and 2.5 |
 | `SES_CONFIGURATION_SET` | 2.4 |
 | `SNS_TOPIC_ARNS` | 2.3 |
 | `SEND_RATE_PER_SECOND` | 2.6 |
 | `UNSUBSCRIBE_MAILTO` | 2.8 |
 
-The database, image storage and cron settings are covered in
-[LAUNCH.md](LAUNCH.md).
+The database, image storage and backups are covered in
+[DEPLOY_UBUNTU.md](DEPLOY_UBUNTU.md).
