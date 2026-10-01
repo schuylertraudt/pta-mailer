@@ -1,7 +1,7 @@
 # Deploying on an Ubuntu server
 
 Step by step, from a fresh Ubuntu server to the signup page running at
-`https://mailer.yourpta.org` with HTTPS, a database, image storage, the send
+`https://mail.atreapta.com` with HTTPS, a database, image storage, the send
 worker and nightly backups. About an hour.
 
 When this guide is done, the site works for parents (signup, confirm, archive,
@@ -10,13 +10,14 @@ yet. That's expected: Google login and Amazon sending come next, in
 [SETUP_GOOGLE_AND_AMAZON.md](SETUP_GOOGLE_AND_AMAZON.md), and they need this
 site to be online first.
 
-Replace these everywhere:
+Addresses used in this guide:
 
-| Placeholder | Meaning |
+| Address | What it is |
 | --- | --- |
-| `mailer.yourpta.org` | The address the site will have |
-| `news.yourpta.org` | The domain newsletters are sent from (set up in the Amazon guide) |
-| `SERVER_IP` | Your server's public IP address |
+| `mail.atreapta.com` | The site's address |
+| `news.atreapta.com` | The domain newsletters are sent from (set up in the Amazon guide) |
+| `pta@atreapta.com` | Example of a mailbox someone reads, for replies. Use a real one |
+| `SERVER_IP` | Your server's public IP address. Replace it with the real one |
 
 Commands are run as a user with `sudo` rights, over SSH. Lines starting with
 `#` inside command blocks are comments; you don't need to type them.
@@ -41,14 +42,20 @@ below. If you don't merge it, use that branch name wherever this guide says
 
 ## 1. Point the domain at the server
 
-In your DNS provider, add an **A record**: name `mailer` (for
-`mailer.yourpta.org`), value `SERVER_IP`. If the server has an IPv6 address,
+In the DNS settings for `atreapta.com`, add an **A record**: name `mail` (for
+`mail.atreapta.com`), value `SERVER_IP`. If the server has an IPv6 address,
 add an **AAAA record** with it too.
+
+**Check first that `mail` isn't already in use.** Email and web hosts often
+create a `mail` record (for webmail or the mail server). If one exists, adding
+yours would break whatever uses it; pick another name such as `news-signup` or
+`newsletter` instead, and use that address everywhere this guide says
+`mail.atreapta.com`.
 
 Check from your own computer after a few minutes:
 
 ```bash
-nslookup mailer.yourpta.org
+nslookup mail.atreapta.com
 ```
 
 It should print `SERVER_IP`. HTTPS in step 10 won't work until it does.
@@ -146,18 +153,18 @@ Paste this, replacing the `<...>` parts and the addresses:
 ```bash
 NODE_ENV=production
 DATABASE_URL=postgres://pta:<database password from step 4>@localhost:5432/pta_mailer
-APP_URL=https://mailer.yourpta.org
+APP_URL=https://mail.atreapta.com
 AUTH_SECRET=<random secret from the line above>
 
 # Newsletters come from this address (must be on the domain you verify with Amazon).
-EMAIL_FROM="PTA News <news@news.yourpta.org>"
+EMAIL_FROM="PTA News <news@news.atreapta.com>"
 # A mailbox someone reads. Replies and privacy requests go here.
-EMAIL_REPLY_TO=pta@yourpta.org
+EMAIL_REPLY_TO=pta@atreapta.com
 
 # Images are stored on this server and served by Caddy (step 10).
 STORAGE_DRIVER=local
 STORAGE_LOCAL_DIR=/var/lib/pta-mailer/media
-STORAGE_PUBLIC_BASE_URL=https://mailer.yourpta.org/media
+STORAGE_PUBLIC_BASE_URL=https://mail.atreapta.com/media
 
 # Added later by SETUP_GOOGLE_AND_AMAZON.md:
 # AUTH_GOOGLE_ID=
@@ -258,11 +265,11 @@ curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo 
 sudo apt update && sudo apt -y install caddy
 ```
 
-Replace Caddy's configuration (change the domain on the first line):
+Replace Caddy's configuration:
 
 ```bash
 sudo tee /etc/caddy/Caddyfile > /dev/null <<'EOF'
-mailer.yourpta.org {
+mail.atreapta.com {
 	encode zstd gzip
 
 	# Uploaded newsletter images. Read-only, no folder listings.
@@ -286,10 +293,10 @@ sudo systemctl reload caddy
 
 In a browser:
 
-- `https://mailer.yourpta.org` shows the signup page, with a padlock in the
+- `https://mail.atreapta.com` shows the signup page, with a padlock in the
   address bar.
-- `https://mailer.yourpta.org/privacy` shows the privacy policy.
-- `https://mailer.yourpta.org/archive` shows "Past newsletters".
+- `https://mail.atreapta.com/privacy` shows the privacy policy.
+- `https://mail.atreapta.com/archive` shows "Past newsletters".
 
 Subscribe with your own email. You won't receive anything yet (sending isn't
 connected), but the confirmation email appears in the website's log, which
@@ -330,12 +337,12 @@ owned by a PTA role account. Restoring is described in
 Follow [SETUP_GOOGLE_AND_AMAZON.md](SETUP_GOOGLE_AND_AMAZON.md), starting at
 "Do things in this order", step 2. Your addresses for it are:
 
-- App address: `https://mailer.yourpta.org`
-- Google redirect URI: `https://mailer.yourpta.org/api/auth/callback/google`
-- Privacy policy link: `https://mailer.yourpta.org/privacy`
-- Amazon notification endpoint: `https://mailer.yourpta.org/api/webhooks/ses`
+- App address: `https://mail.atreapta.com`
+- Google redirect URI: `https://mail.atreapta.com/api/auth/callback/google`
+- Privacy policy link: `https://mail.atreapta.com/privacy`
+- Amazon notification endpoint: `https://mail.atreapta.com/api/webhooks/ses`
 
-Whenever that guide says to set a variable and redeploy, on this server that
+Whenever that guide says to set a variable and restart, on this server that
 means: add the line to `/etc/pta-mailer.env` (`sudo nano /etc/pta-mailer.env`),
 then
 

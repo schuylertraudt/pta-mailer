@@ -7,19 +7,21 @@ Two one-time setups connect the app to outside services:
 - **Amazon SES** sends the newsletters and confirmation emails, and reports
   bounces and spam complaints back to the app.
 
-Throughout, replace:
+Addresses used in this guide:
 
-| Placeholder | Meaning | Example |
-| --- | --- | --- |
-| `mailer.pta.example.org` | Where the app is hosted | `news.shenpta.org` or `pta-mailer.vercel.app` |
-| `pta.example.org` | The PTA's own domain | `shenpta.org` |
-| `news.pta.example.org` | Subdomain newsletters are sent from | `news.shenpta.org` |
+| Address | What it is |
+| --- | --- |
+| `mail.atreapta.com` | Where the app runs |
+| `atreapta.com` | The PTA's own domain |
+| `news.atreapta.com` | Subdomain newsletters are sent from |
+| `pta@atreapta.com`, `tech@atreapta.com` | Examples of PTA role mailboxes. Use real ones |
 
-Each value you collect goes into the hosting environment variables (Vercel →
-Project → Settings → Environment Variables, or the server's env file). A table
-of all of them is at the end. Never paste them into email, chat or the repo.
+Each value you collect goes into the server's settings file,
+`/etc/pta-mailer.env` (edit it with `sudo nano /etc/pta-mailer.env`, then
+`sudo systemctl restart pta-web pta-worker`). A table of all of them is at the
+end. Never paste them into email, chat or the repo.
 
-Use a **PTA role account** (e.g. `tech@pta.example.org`), not a personal one,
+Use a **PTA role account** (e.g. `tech@atreapta.com`), not a personal one,
 as the owner of both the Google Cloud project and the AWS account, and store
 its password in the PTA's password manager. Add a second person as a backup
 owner on each.
@@ -30,25 +32,26 @@ Some steps need the app to be online first (Google checks the privacy policy
 link; Amazon calls the app back), and some take days of waiting (DNS, Amazon
 approval), so start those early.
 
-1. **Deploy the app first, without Google or Amazon.** It runs with only five
-   settings: `DATABASE_URL`, `APP_URL`, `AUTH_SECRET`, `EMAIL_FROM` and
-   `STORAGE_PUBLIC_BASE_URL` (see LAUNCH.md, sections 4 and 5). Leave
-   `EMAIL_PROVIDER` unset: emails are then only written to the hosting logs, not
-   sent. Run the database migrations. Check that the signup page and
-   `https://<your address>/privacy` open.
+1. **Deploy the app first, without Google or Amazon**, by following
+   [DEPLOY_UBUNTU.md](DEPLOY_UBUNTU.md). Emails are then only written to the
+   server's logs, not sent. Check that `https://mail.atreapta.com` and
+   `https://mail.atreapta.com/privacy` open.
 2. **Start Amazon's slow parts:** 2.1 and 2.2 (DNS can take up to 72 hours to
    verify), then 2.6, the production-access request (Amazon reviews the website
    you name, so it helps that it's live).
-3. **Google, all of Part 1**, using the live address for the redirect URI and
-   privacy link. After 1.6 you can log in and build newsletters.
-4. **Finish Amazon:** 2.3, 2.4, 2.5, 2.8, set the 2.9 variables and redeploy,
+3. **Google, all of Part 1.** After 1.6 you can log in and build newsletters.
+4. **Finish Amazon:** 2.3, 2.4, 2.5, 2.8, set the 2.9 variables and restart,
    then 2.7 (connect the topic; the app must be live with `SNS_TOPIC_ARNS` set),
    then 2.10.
 
-If you later move from a temporary address (like `*.vercel.app`) to the PTA's
-own domain, update everywhere the address appears: `APP_URL`, the Google
-redirect URI, authorized domain and privacy link (1.2, 1.4), and the SNS
-subscription endpoint (2.7).
+"Restart" in this guide means, on the server:
+`sudo systemctl restart pta-web pta-worker` (after editing
+`/etc/pta-mailer.env`).
+
+If the site's address ever changes from `mail.atreapta.com`, update everywhere
+it appears: `APP_URL` and `STORAGE_PUBLIC_BASE_URL`, the Caddy configuration,
+the Google redirect URI and privacy link (1.2, 1.4), and the SNS subscription
+endpoint (2.7).
 
 ---
 
@@ -72,14 +75,12 @@ Time: about 15 minutes. Cost: free.
    has an address in the PTA's own Google Workspace.)
 4. **Contact information:** the PTA role address. Agree to the policy, **Create**.
 5. **Branding** page:
-   - Application home page: `https://mailer.pta.example.org`.
-   - Application privacy policy link: `https://mailer.pta.example.org/privacy`
+   - Application home page: `https://mail.atreapta.com`.
+   - Application privacy policy link: `https://mail.atreapta.com/privacy`
      (the app serves this page; edit the organization name and date in
      `src/lib/site.ts`). Deploy the app before publishing so the link works.
    - Terms of service link: optional, leave empty.
-   - Authorized domains: the PTA's domain (e.g. `pta.example.org`) once the app
-     runs on it. If you're still on a temporary `*.vercel.app` address, leave
-     this empty.
+   - Authorized domains: `atreapta.com`.
    - **Leave the logo empty.** Uploading a logo makes Google require a brand
      review that can take weeks.
 6. **Data Access** page → **Add or remove scopes** → tick only
@@ -99,7 +100,7 @@ log in, and Google limits how long their approval lasts.
 1. **Clients** page (or **Credentials → Create credentials → OAuth client ID**).
 2. Application type: **Web application**. Name: `PTA Mailer`.
 3. **Authorized redirect URIs** → add both:
-   - `https://mailer.pta.example.org/api/auth/callback/google`
+   - `https://mail.atreapta.com/api/auth/callback/google`
    - `http://localhost:3000/api/auth/callback/google` (for local testing)
 
    The address must match exactly: `https`, no trailing slash. If the app
@@ -114,12 +115,12 @@ log in, and Google limits how long their approval lasts.
 | `AUTH_GOOGLE_ID` | the Client ID (ends in `.apps.googleusercontent.com`) |
 | `AUTH_GOOGLE_SECRET` | the Client secret |
 | `AUTH_SECRET` | a random string: run `openssl rand -base64 32`, or use a password manager's generator (32+ characters) |
-| `APP_URL` | `https://mailer.pta.example.org` (no trailing slash) |
+| `APP_URL` | `https://mail.atreapta.com` (no trailing slash) |
 | `BOOTSTRAP_ADMIN_EMAIL` | the Google email of the first admin |
 
 ### 1.6 First login
 
-1. Redeploy so the new variables take effect.
+1. Restart the app so the new settings take effect.
 2. The person in `BOOTSTRAP_ADMIN_EMAIL` opens the site → **Login** →
    **Sign in with Google**. They land on the Newsletters page as admin.
 3. Right away, open **Team** and add a **second admin**. The app requires two
@@ -163,23 +164,23 @@ registered or hosted: GoDaddy, Cloudflare, Google Domains/Squarespace, etc.).
 ### 2.2 Verify the sending domain
 
 1. Open **Amazon SES** → **Configuration → Identities → Create identity**.
-2. Identity type **Domain**; domain `news.pta.example.org`.
-3. Tick **Use a custom MAIL FROM domain** → `bounce.news.pta.example.org`;
+2. Identity type **Domain**; domain `news.atreapta.com`.
+3. Tick **Use a custom MAIL FROM domain** → `bounce.news.atreapta.com`;
    behavior on MX failure: **Use default MAIL FROM**.
 4. **Easy DKIM**, key length **RSA_2048_BIT**, publish DNS records **enabled**.
 5. **Create identity.** SES shows the DNS records to add.
 6. In your DNS provider, add every record SES lists:
    - three **CNAME** records for DKIM (`xxxx._domainkey.news...`)
-   - one **MX** record for `bounce.news.pta.example.org` →
+   - one **MX** record for `bounce.news.atreapta.com` →
      `10 feedback-smtp.us-east-1.amazonses.com`
-   - one **TXT** record for `bounce.news.pta.example.org` →
+   - one **TXT** record for `bounce.news.atreapta.com` →
      `"v=spf1 include:amazonses.com ~all"`
 
    Some DNS providers add the domain name automatically, so you enter only the
-   part before `.pta.example.org` in the name field.
+   part before `.atreapta.com` in the name field.
 7. Add a **DMARC** record (SES doesn't list this one):
-   - TXT, name `_dmarc.pta.example.org`, value
-     `v=DMARC1; p=none; rua=mailto:dmarc@pta.example.org`
+   - TXT, name `_dmarc.atreapta.com`, value
+     `v=DMARC1; p=none; rua=mailto:dmarc@atreapta.com`
 8. Wait for SES to show the identity as **Verified** and DKIM as
    **Successful** (usually under an hour; up to 72).
 
@@ -251,7 +252,7 @@ New SES accounts are in a "sandbox" that can only send to addresses you have
 verified one by one.
 
 1. **SES → Account dashboard → Request production access**.
-2. Mail type **Marketing**. Website URL: `https://mailer.pta.example.org`.
+2. Mail type **Marketing**. Website URL: `https://mail.atreapta.com`.
 3. Use case description, for example:
 
    > Newsletter for a school PTA with roughly 400 subscribing families, sent a
@@ -278,12 +279,12 @@ Do this **after** the app is deployed with the variables from 2.9, so it can
 answer Amazon's confirmation request.
 
 1. **SNS → Topics → pta-ses-events → Create subscription**.
-2. Protocol **HTTPS**; endpoint `https://mailer.pta.example.org/api/webhooks/ses`.
+2. Protocol **HTTPS**; endpoint `https://mail.atreapta.com/api/webhooks/ses`.
 3. Leave **Enable raw message delivery** **off**. The app checks Amazon's
    signature on each message, which raw delivery removes.
 4. Create. Within a minute the subscription status should change to
    **Confirmed**. If it stays "Pending confirmation", check that
-   `SNS_TOPIC_ARNS` is set exactly to the topic ARN and redeploy, then select
+   `SNS_TOPIC_ARNS` is set exactly to the topic ARN and restart the app, then select
    the subscription → **Request confirmation**.
 
 ### 2.8 Unsubscribe by email (optional, recommended)
@@ -291,22 +292,22 @@ answer Amazon's confirmation request.
 Gmail and Apple Mail mostly use the one-click web unsubscribe, which already
 works. This adds the email-based unsubscribe that some other mail programs use.
 
-1. DNS: add **MX** for `news.pta.example.org` →
+1. DNS: add **MX** for `news.atreapta.com` →
    `10 inbound-smtp.us-east-1.amazonaws.com`.
 2. **SES → Email receiving → Rule sets** → create a rule set (if none) and
    **Set as active**.
-3. **Create rule**: recipient `unsubscribe@news.pta.example.org`; action
+3. **Create rule**: recipient `unsubscribe@news.atreapta.com`; action
    **Publish to Amazon SNS topic** → `pta-ses-events`, encoding **UTF-8**.
    Accept the prompt to let SES publish to the topic.
-4. Set `UNSUBSCRIBE_MAILTO=unsubscribe@news.pta.example.org`.
+4. Set `UNSUBSCRIBE_MAILTO=unsubscribe@news.atreapta.com`.
 
 ### 2.9 Give the values to the app
 
 | Variable | Value |
 | --- | --- |
 | `EMAIL_PROVIDER` | `ses` |
-| `EMAIL_FROM` | `"PTA News <news@news.pta.example.org>"` (must be on the verified domain) |
-| `EMAIL_REPLY_TO` | optional: a mailbox someone reads, e.g. `pta@pta.example.org` |
+| `EMAIL_FROM` | `"PTA News <news@news.atreapta.com>"` (must be on the verified domain) |
+| `EMAIL_REPLY_TO` | optional: a mailbox someone reads, e.g. `pta@atreapta.com` |
 | `SES_REGION` | `us-east-1` (the region you chose) |
 | `SES_ACCESS_KEY_ID` | from 2.5 |
 | `SES_SECRET_ACCESS_KEY` | from 2.5 |
@@ -315,7 +316,7 @@ works. This adds the email-based unsubscribe that some other mail programs use.
 | `SEND_RATE_PER_SECOND` | your SES max send rate, e.g. `14` |
 | `UNSUBSCRIBE_MAILTO` | from 2.8, or leave empty |
 
-Redeploy after setting them, then do 2.7.
+Restart the app after setting them, then do 2.7.
 
 ### 2.10 Prove it works
 
