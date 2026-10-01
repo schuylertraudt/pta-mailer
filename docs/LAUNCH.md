@@ -4,20 +4,21 @@ Work through this top to bottom before the first real send. Each item names
 where the setting lives. Click-by-click instructions for Google login and
 Amazon SES are in [SETUP_GOOGLE_AND_AMAZON.md](SETUP_GOOGLE_AND_AMAZON.md), and
 for the server in [DEPLOY_UBUNTU.md](DEPLOY_UBUNTU.md). The PTA's domain is
-`atreapta.com`; the app runs at `mail.atreapta.com`; newsletters are sent from
-`news.atreapta.com`.
+`atreapta.com`; the app runs at `mail.atreapta.com`, and newsletters are sent
+from that same domain (`news@mail.atreapta.com`).
 
 ## 1. Sending domain DNS (SPF, DKIM, DMARC)
 
-Send from a subdomain such as `news.atreapta.com` so newsletter reputation
-is separate from the PTA's everyday mail.
+Newsletters are sent from the subdomain `mail.atreapta.com`, so their
+reputation stays separate from the PTA's everyday `@atreapta.com` mail. The
+website's A record and these email records live side by side on that name.
 
 - [ ] **DKIM**: In SES (Configuration → Identities → Create identity → Domain),
       enable Easy DKIM (RSA 2048). Add the three `CNAME` records SES shows.
 - [ ] **Custom MAIL FROM** (aligns SPF with your domain): in the same identity,
-      set MAIL FROM to `bounce.news.atreapta.com`, then add:
-      - `MX bounce.news.atreapta.com → 10 feedback-smtp.<region>.amazonses.com`
-      - `TXT bounce.news.atreapta.com → "v=spf1 include:amazonses.com ~all"`
+      set MAIL FROM to `bounce.mail.atreapta.com`, then add:
+      - `MX bounce.mail.atreapta.com → 10 feedback-smtp.<region>.amazonses.com`
+      - `TXT bounce.mail.atreapta.com → "v=spf1 include:amazonses.com ~all"`
 - [ ] **DMARC**: `TXT _dmarc.atreapta.com → "v=DMARC1; p=none; rua=mailto:dmarc@atreapta.com; adkim=r; aspf=r"`.
       After 2–4 weeks of clean aggregate reports, raise to `p=quarantine`.
 - [ ] Wait for SES to show the identity as **Verified** and DKIM as **Successful**.
@@ -50,10 +51,10 @@ the DNS above handles the rest.
          signature and confirms the subscription automatically; check it shows
          **Confirmed**.
 - [ ] **Mailto unsubscribe** (optional but recommended):
-      1. `MX news.atreapta.com → 10 inbound-smtp.<region>.amazonaws.com`.
-      2. SES → Email receiving → rule set → rule for `unsubscribe@news.atreapta.com`
+      1. `MX mail.atreapta.com → 10 inbound-smtp.<region>.amazonaws.com`.
+      2. SES → Email receiving → rule set → rule for `unsubscribe@mail.atreapta.com`
          with action **SNS** (same topic is fine; add its ARN to `SNS_TOPIC_ARNS`).
-      3. Set `UNSUBSCRIBE_MAILTO=unsubscribe@news.atreapta.com`.
+      3. Set `UNSUBSCRIBE_MAILTO=unsubscribe@mail.atreapta.com`.
 - [ ] Use the SES mailbox simulator to prove the loop: send a test newsletter to a
       committee segment containing `bounce@simulator.amazonses.com` and
       `complaint@simulator.amazonses.com` (add them as confirmed subscribers via SQL

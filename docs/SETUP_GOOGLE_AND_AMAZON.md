@@ -11,9 +11,8 @@ Addresses used in this guide:
 
 | Address | What it is |
 | --- | --- |
-| `mail.atreapta.com` | Where the app runs |
+| `mail.atreapta.com` | Where the app runs, and the domain newsletters are sent from (`news@mail.atreapta.com`) |
 | `atreapta.com` | The PTA's own domain |
-| `news.atreapta.com` | Subdomain newsletters are sent from |
 | `pta@atreapta.com`, `tech@atreapta.com` | Examples of PTA role mailboxes. Use real ones |
 
 Each value you collect goes into the server's settings file,
@@ -164,16 +163,16 @@ registered or hosted: GoDaddy, Cloudflare, Google Domains/Squarespace, etc.).
 ### 2.2 Verify the sending domain
 
 1. Open **Amazon SES** → **Configuration → Identities → Create identity**.
-2. Identity type **Domain**; domain `news.atreapta.com`.
-3. Tick **Use a custom MAIL FROM domain** → `bounce.news.atreapta.com`;
+2. Identity type **Domain**; domain `mail.atreapta.com`.
+3. Tick **Use a custom MAIL FROM domain** → `bounce.mail.atreapta.com`;
    behavior on MX failure: **Use default MAIL FROM**.
 4. **Easy DKIM**, key length **RSA_2048_BIT**, publish DNS records **enabled**.
 5. **Create identity.** SES shows the DNS records to add.
 6. In your DNS provider, add every record SES lists:
-   - three **CNAME** records for DKIM (`xxxx._domainkey.news...`)
-   - one **MX** record for `bounce.news.atreapta.com` →
+   - three **CNAME** records for DKIM (`xxxx._domainkey.mail.atreapta.com`)
+   - one **MX** record for `bounce.mail.atreapta.com` →
      `10 feedback-smtp.us-east-1.amazonses.com`
-   - one **TXT** record for `bounce.news.atreapta.com` →
+   - one **TXT** record for `bounce.mail.atreapta.com` →
      `"v=spf1 include:amazonses.com ~all"`
 
    Some DNS providers add the domain name automatically, so you enter only the
@@ -292,21 +291,23 @@ answer Amazon's confirmation request.
 Gmail and Apple Mail mostly use the one-click web unsubscribe, which already
 works. This adds the email-based unsubscribe that some other mail programs use.
 
-1. DNS: add **MX** for `news.atreapta.com` →
-   `10 inbound-smtp.us-east-1.amazonaws.com`.
+1. DNS: add **MX** for `mail.atreapta.com` →
+   `10 inbound-smtp.us-east-1.amazonaws.com`. Keep the existing A record for
+   the website; the A record serves the website and the MX record receives
+   email, so they don't interfere.
 2. **SES → Email receiving → Rule sets** → create a rule set (if none) and
    **Set as active**.
-3. **Create rule**: recipient `unsubscribe@news.atreapta.com`; action
+3. **Create rule**: recipient `unsubscribe@mail.atreapta.com`; action
    **Publish to Amazon SNS topic** → `pta-ses-events`, encoding **UTF-8**.
    Accept the prompt to let SES publish to the topic.
-4. Set `UNSUBSCRIBE_MAILTO=unsubscribe@news.atreapta.com`.
+4. Set `UNSUBSCRIBE_MAILTO=unsubscribe@mail.atreapta.com`.
 
 ### 2.9 Give the values to the app
 
 | Variable | Value |
 | --- | --- |
 | `EMAIL_PROVIDER` | `ses` |
-| `EMAIL_FROM` | `"PTA News <news@news.atreapta.com>"` (must be on the verified domain) |
+| `EMAIL_FROM` | `"PTA News <news@mail.atreapta.com>"` (must be on the verified domain) |
 | `EMAIL_REPLY_TO` | optional: a mailbox someone reads, e.g. `pta@atreapta.com` |
 | `SES_REGION` | `us-east-1` (the region you chose) |
 | `SES_ACCESS_KEY_ID` | from 2.5 |

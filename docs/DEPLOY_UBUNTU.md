@@ -14,8 +14,7 @@ Addresses used in this guide:
 
 | Address | What it is |
 | --- | --- |
-| `mail.atreapta.com` | The site's address |
-| `news.atreapta.com` | The domain newsletters are sent from (set up in the Amazon guide) |
+| `mail.atreapta.com` | The site's address, and also the domain newsletters are sent from (`news@mail.atreapta.com`, set up in the Amazon guide) |
 | `pta@atreapta.com` | Example of a mailbox someone reads, for replies. Use a real one |
 | `SERVER_IP` | Your server's public IP address. Replace it with the real one |
 
@@ -151,7 +150,7 @@ APP_URL=https://mail.atreapta.com
 AUTH_SECRET=<random secret from the line above>
 
 # Newsletters come from this address (must be on the domain you verify with Amazon).
-EMAIL_FROM="PTA News <news@news.atreapta.com>"
+EMAIL_FROM="PTA News <news@mail.atreapta.com>"
 # A mailbox someone reads. Replies and privacy requests go here.
 EMAIL_REPLY_TO=pta@atreapta.com
 
