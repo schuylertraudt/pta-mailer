@@ -28,7 +28,10 @@ const schema = z.object({
   SNS_TOPIC_ARNS: z.string().default(""),
   CRON_SECRET: z.string().optional(),
 
-  STORAGE_DRIVER: z.enum(["s3", "memory"]).default("s3"),
+  // s3: S3-compatible bucket. local: files on this server's disk, served by the
+  // web server (Caddy/nginx) at STORAGE_PUBLIC_BASE_URL. memory: dev/tests only.
+  STORAGE_DRIVER: z.enum(["s3", "local", "memory"]).default("s3"),
+  STORAGE_LOCAL_DIR: z.string().default("/var/lib/pta-mailer/media"),
   S3_ENDPOINT: z.string().optional(),
   S3_REGION: z.string().default("auto"),
   S3_BUCKET: z.string().optional(),

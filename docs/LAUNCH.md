@@ -115,10 +115,11 @@ Cloudflare R2 shown; S3 and Supabase Storage (S3 endpoint) work the same way.
       production before the first deploy and after every schema change:
       `DATABASE_URL=<prod url> npm run db:migrate`.
 
-**Hetzner (or any VM)**
-- [ ] Node 22, `npm ci && npm run build && npm run db:migrate`.
-- [ ] Two systemd services with an `EnvironmentFile`: `npm start` (web, behind
-      Caddy/nginx with TLS) and `npm run worker` (send queue).
+**Your own Ubuntu server (Hetzner or any VM)**
+- [ ] Follow [DEPLOY_UBUNTU.md](DEPLOY_UBUNTU.md): Node 22, local PostgreSQL,
+      Caddy for HTTPS, two systemd services (website and send worker), images
+      on the server's disk (`STORAGE_DRIVER=local`, so section 4's bucket isn't
+      needed), nightly backups.
 
 ## 6. Before the first send
 

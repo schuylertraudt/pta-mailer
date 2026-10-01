@@ -71,8 +71,10 @@ code change: Vercel → project → Deployments → latest → ⋯ → Redeploy.
 immediately after) deploying the commit that needs it. Migrations only add;
 they are safe to run twice.
 
-**Hetzner (dev):** `git pull && npm ci && npm run build && npm run db:migrate &&
-sudo systemctl restart pta-web pta-worker`.
+**Own Ubuntu server (dev):** follow "Updating to a new version" in
+[DEPLOY_UBUNTU.md](DEPLOY_UBUNTU.md): pull, install, build, migrate, then
+`sudo systemctl restart pta-web pta-worker`. After changing a setting in
+`/etc/pta-mailer.env`, only the restart is needed.
 
 ## Rotating secrets
 

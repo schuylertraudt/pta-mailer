@@ -1,23 +1,32 @@
 /**
- * Long-running send worker for hosts without Vercel Cron (e.g. Hetzner).
+ * Long-running send worker for hosts without Vercel Cron (e.g. a VPS).
  * Run under systemd or a process manager: `npm run worker`.
  */
-import { createDb } from "@/db";
-import { env } from "@/lib/env";
-import { getEmailProvider } from "@/lib/mail/provider";
-import { processQueue } from "@/lib/queue/dispatch";
+import { runQueueOnce } from "@/lib/queue/run";
 
-const { db } = createDb(env().DATABASE_URL);
 let stopping = false;
-for (const sig of ["SIGINT", "SIGTERM"] as const) process.on(sig, () => (stopping = true));
+let wake: () => void = () => {};
+for (const sig of ["SIGINT", "SIGTERM"] as const) {
+  process.on(sig, () => {
+    stopping = true;
+    wake();
+  });
+}
 
 while (!stopping) {
   try {
-    const r = await processQueue(db, getEmailProvider(), { ratePerSecond: env().SEND_RATE_PER_SECOND, deadlineMs: 50_000 });
+    const r = await runQueueOnce();
     if (r.sent || r.failed || r.retried || r.skipped) console.log(new Date().toISOString(), r);
   } catch (e) {
     console.error("queue run failed", e);
   }
-  await new Promise((r) => setTimeout(r, 15_000));
+  // Pause between sweeps; a stop signal ends the pause early.
+  await new Promise<void>((r) => {
+    const t = setTimeout(r, 15_000);
+    wake = () => {
+      clearTimeout(t);
+      r();
+    };
+  });
 }
 process.exit(0);

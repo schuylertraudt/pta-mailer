@@ -172,3 +172,20 @@ describe("direct-to-bucket upload finalize", () => {
     expect(storage.incoming.has(key)).toBe(false);
   });
 });
+
+describe("local disk storage", () => {
+  it("writes under its directory with web-readable permissions and refuses path traversal", async () => {
+    const { LocalStorage } = await import("@/lib/storage");
+    const { mkdtemp, readFile, stat } = await import("node:fs/promises");
+    const os = await import("node:os");
+    const path = await import("node:path");
+    const dir = await mkdtemp(path.join(os.tmpdir(), "pta-media-"));
+    const s = new LocalStorage(dir);
+    const { publicUrl } = await s.put("images/2026/10/a.jpg", Buffer.from("x"));
+    expect(publicUrl).toBe("https://images.pta.example.org/images/2026/10/a.jpg");
+    expect((await readFile(path.join(dir, "images/2026/10/a.jpg"))).toString()).toBe("x");
+    expect((await stat(path.join(dir, "images/2026/10/a.jpg"))).mode & 0o777).toBe(0o644);
+    await expect(s.put("../escape.jpg", Buffer.from("x"))).rejects.toThrow("Invalid storage key");
+    expect(await s.presignIncoming()).toBeNull();
+  });
+});

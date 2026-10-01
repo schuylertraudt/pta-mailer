@@ -1,5 +1,7 @@
 import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { env } from "@/lib/env";
 
 /** S3-compatible object storage (R2, S3, Supabase Storage S3 endpoint). */
@@ -92,11 +94,38 @@ export class MemoryStorage implements ObjectStorage {
   }
 }
 
+/**
+ * Files on this server's disk. The web server serves the directory read-only
+ * at STORAGE_PUBLIC_BASE_URL; uploads go through the app (no request-size cap
+ * on a self-hosted server), so there is no presigned "incoming" step.
+ */
+export class LocalStorage implements ObjectStorage {
+  private root: string;
+  constructor(dir: string) {
+    this.root = path.resolve(dir);
+  }
+  async put(key: string, body: Buffer) {
+    const file = path.resolve(this.root, key);
+    if (!file.startsWith(this.root + path.sep)) throw new Error("Invalid storage key");
+    await mkdir(path.dirname(file), { recursive: true, mode: 0o755 });
+    await writeFile(file, body, { mode: 0o644 });
+    return { publicUrl: publicUrlFor(key) };
+  }
+  async presignIncoming() {
+    return null;
+  }
+  async getIncoming() {
+    return null;
+  }
+  async deleteIncoming() {}
+}
+
 let storage: ObjectStorage | undefined;
 export function getStorage(): ObjectStorage {
   if (!storage) {
     const e = env();
     if (e.STORAGE_DRIVER === "memory") storage = new MemoryStorage();
+    else if (e.STORAGE_DRIVER === "local") storage = new LocalStorage(e.STORAGE_LOCAL_DIR);
     else {
       if (!e.S3_BUCKET) throw new Error("S3_BUCKET is not set");
       storage = new S3Storage(e.S3_BUCKET, e.S3_INCOMING_BUCKET || e.S3_BUCKET);

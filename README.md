@@ -6,6 +6,7 @@ branded newsletters in a block editor, and send through Amazon SES.
 
 - Launch steps: [docs/LAUNCH.md](docs/LAUNCH.md)
 - Running it year to year: [docs/OPERATIONS.md](docs/OPERATIONS.md)
+- Deploying on an Ubuntu server, step by step: [docs/DEPLOY_UBUNTU.md](docs/DEPLOY_UBUNTU.md)
 - Google login and Amazon SES setup, step by step: [docs/SETUP_GOOGLE_AND_AMAZON.md](docs/SETUP_GOOGLE_AND_AMAZON.md)
 
 ## Stack
