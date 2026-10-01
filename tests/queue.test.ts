@@ -1,7 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { eq, sql } from "drizzle-orm";
 import { campaigns, sends, subscribers, suppressions } from "@/db/schema";
-import { campaignStats, enqueueCampaign } from "@/lib/queue/enqueue";
+import { campaignLinks, campaignStats, enqueueCampaign } from "@/lib/queue/enqueue";
 import { processQueue, STALE_SENDING_MS } from "@/lib/queue/dispatch";
 import { MemoryProvider } from "@/lib/mail/provider";
 import { unsubscribeByToken } from "@/lib/subscribers/service";
@@ -232,3 +232,44 @@ describe("bounces and complaints", () => {
     expect(row).toMatchObject({ email: s.email, source: "unsubscribe:mailto" });
   });
 });
+
+describe("open and click tracking", () => {
+  it("counts opens and clicks per send and per link, keeping the earliest time", async () => {
+    const a = await makeSubscriber(db);
+    const b = await makeSubscriber(db);
+    await makeSubscriber(db);
+    const { c, provider } = await sendCampaign();
+    const idOf = (email: string) => provider.sent.find((m) => m.to === email)!.messageId;
+
+    await handleSesEvent(db, { eventType: "Open", mail: { messageId: idOf(a.email) }, open: { timestamp: "2026-10-02T10:00:00Z" } });
+    await handleSesEvent(db, { eventType: "Open", mail: { messageId: idOf(a.email) }, open: { timestamp: "2026-10-02T09:00:00Z" } });
+    await handleSesEvent(db, { eventType: "Open", mail: { messageId: idOf(b.email) }, open: { timestamp: "not a date" } });
+    const form = "https://forms.example.org/volunteer";
+    expect(await handleSesEvent(db, { eventType: "Click", mail: { messageId: idOf(a.email) }, click: { link: form } })).toBe("click recorded");
+    await handleSesEvent(db, { eventType: "Click", mail: { messageId: idOf(a.email) }, click: { link: form } });
+    await handleSesEvent(db, { eventType: "Click", mail: { messageId: idOf(b.email) }, click: { link: form } });
+    await handleSesEvent(db, { eventType: "Click", mail: { messageId: idOf(b.email) }, click: { link: "https://example.org/other" } });
+    // Opens of test sends and unknown messages are ignored.
+    expect(await handleSesEvent(db, { eventType: "Open", mail: { messageId: "unknown" } })).toBe("ignored open");
+    expect(await handleSesEvent(db, { eventType: "Click", mail: { messageId: "unknown" }, click: { link: form } })).toBe("ignored click");
+
+    const [rowA] = await db.select().from(sends).where(eq(sends.providerMessageId, idOf(a.email)));
+    expect(rowA).toMatchObject({ openCount: 2, clickCount: 2 });
+    expect(rowA.firstOpenedAt!.toISOString()).toBe("2026-10-02T09:00:00.000Z");
+
+    expect(await campaignStats(db, c.id)).toMatchObject({ delivered: 3, opened: 2, clicked: 2 });
+    expect(await campaignLinks(db, c.id)).toEqual([
+      { url: form, families: 2, clicks: 3 },
+      { url: "https://example.org/other", families: 1, clicks: 1 },
+    ]);
+  });
+
+  it("keeps the unsubscribe and view-online links out of click tracking", async () => {
+    await makeSubscriber(db);
+    const { provider } = await sendCampaign();
+    const html = provider.sent[0].html;
+    expect(html).toMatch(/<a [^>]*\/u\/[^"]+"[^>]*ses:no-track=""[^>]*>Unsubscribe<\/a>/);
+    expect(html).toMatch(/ses:no-track="">View in browser<\/a>/);
+  });
+});
+

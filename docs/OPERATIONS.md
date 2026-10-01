@@ -49,6 +49,18 @@ Check after every send (the message's page → Delivery):
 | Complaints | < 0.1% | > 0.3%: Gmail/Yahoo start filtering. Send less often, make content more relevant, check the From name is recognizable |
 | Failed | 0 | Any: open the message; `last_error` on the send rows explains why **(dev)** |
 
+Engagement (same panel), as a share of delivered messages:
+
+- **Clicked a link**: exact. The table under it shows each link, how many
+  families clicked it, and total clicks. The unsubscribe and "View in browser"
+  links aren't tracked.
+- **Opened**: an estimate. Apple Mail opens every message on arrival (counted
+  even if never read), Gmail counts once, and anyone blocking images is never
+  counted. Compare opens between your own messages; don't treat them as
+  "who read it".
+- Both stay at 0 unless the SES configuration set has **Opens** and **Clicks**
+  ticked (Google/Amazon guide, step 2.4). Send Preview copies aren't counted.
+
 Monthly:
 - **SES console → Reputation metrics**: bounce and complaint rates. AWS pauses
   sending at 10% bounces or 0.5% complaints.

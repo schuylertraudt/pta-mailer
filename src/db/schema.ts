@@ -301,6 +301,12 @@ export const sends = pgTable(
     // Retry backoff: a queued row is not dispatched before this time.
     nextAttemptAt: ts("next_attempt_at").notNull().defaultNow(),
     sentAt: ts("sent_at"),
+    // SES open/click tracking. Opens are an estimate: Apple Mail preloads
+    // images (false opens) and image blocking hides real ones. Clicks are real.
+    firstOpenedAt: ts("first_opened_at"),
+    openCount: integer("open_count").notNull().default(0),
+    firstClickedAt: ts("first_clicked_at"),
+    clickCount: integer("click_count").notNull().default(0),
     createdAt: createdAt(),
   },
   (t) => [
@@ -310,6 +316,20 @@ export const sends = pgTable(
     index("sends_campaign_status_idx").on(t.campaignId, t.status),
     index("sends_dispatch_idx").on(t.status, t.nextAttemptAt),
   ],
+);
+
+// One row per (send, link): which links each delivered copy had clicked.
+export const sendClicks = pgTable(
+  "send_clicks",
+  {
+    sendId: uuid("send_id")
+      .notNull()
+      .references(() => sends.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    clicks: integer("clicks").notNull().default(1),
+    firstAt: ts("first_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.sendId, t.url] })],
 );
 
 export const dataAuditAction = pgEnum("data_audit_action", ["subscriber_delete", "subscriber_export"]);

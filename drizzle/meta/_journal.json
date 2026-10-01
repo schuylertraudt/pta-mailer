@@ -57,6 +57,13 @@
       "when": 1790872846519,
       "tag": "0007_drop_campaign_segment_id",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790891260882,
+      "tag": "0008_open_click_tracking",
+      "breakpoints": true
     }
   ]
 }

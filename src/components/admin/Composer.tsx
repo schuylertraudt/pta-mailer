@@ -26,7 +26,21 @@ type Campaign = {
   status: Status;
 };
 type Segment = { id: string; name: string; recipients: number };
-type Stats = { total: number; queued: number; sent: number; failed: number; skipped: number; bounced: number; complained: number };
+type Stats = {
+  total: number;
+  queued: number;
+  sent: number;
+  failed: number;
+  skipped: number;
+  bounced: number;
+  complained: number;
+  delivered: number;
+  opened: number;
+  clicked: number;
+};
+type LinkStat = { url: string; families: number; clicks: number };
+
+const pct = (n: number, of: number) => (of ? `${Math.round((n / of) * 100)}%` : "–");
 type Preview = { html: string; checks: Check[]; bytes: number; recipients: number };
 
 const EDITABLE: Status[] = ["draft", "pending_approval", "approved"];
@@ -351,6 +365,7 @@ export default function Composer(props: {
   const [modal, setModal] = useState<ModalState>(null);
   const [menu, setMenu] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [links, setLinks] = useState<LinkStat[]>([]);
   const [busy, setBusy] = useState(false);
   const canSend = props.role !== "drafter";
   const canViewRecipients = props.role !== "drafter";
@@ -443,9 +458,10 @@ export default function Composer(props: {
     if (c.status !== "sending" && c.status !== "sent" && c.status !== "failed") return;
     let stop = false;
     const tick = async () => {
-      const { stats } = await api<{ stats: Stats }>(`/api/campaigns/${c.id}/stats`);
+      const { stats, links } = await api<{ stats: Stats; links: LinkStat[] }>(`/api/campaigns/${c.id}/stats`);
       if (stop) return;
       setStats(stats);
+      setLinks(links);
       if (c.status === "sending" && stats.queued === 0) router.refresh();
     };
     void tick();
@@ -593,21 +609,71 @@ export default function Composer(props: {
         </p>
       )}
       {stats && (
-        <section className="panel row" style={{ gap: 24 }}>
-          <strong>Delivery</strong>
-          <span>Queued {stats.queued}</span>
-          <span>Sent {stats.sent}</span>
-          <span>Failed {stats.failed}</span>
-          <span>Skipped {stats.skipped}</span>
-          <span>Bounced {stats.bounced}</span>
-          <span>Complaints {stats.complained}</span>
+        <section className="panel">
+          <div className="panel-head">
+            <h2>Delivery</h2>
+          </div>
+          <div className="stat-grid">
+            <div className="stat">
+              <span className="stat-n">{stats.delivered}</span>
+              <span className="muted">Delivered</span>
+            </div>
+            <div className="stat">
+              <span className="stat-n">
+                {pct(stats.opened, stats.delivered)}
+                <sup>*</sup>
+              </span>
+              <span className="muted">Opened ({stats.opened})</span>
+            </div>
+            <div className="stat">
+              <span className="stat-n">{pct(stats.clicked, stats.delivered)}</span>
+              <span className="muted">Clicked a link ({stats.clicked})</span>
+            </div>
+          </div>
+          <p className="muted hint">
+            Queued {stats.queued} · Failed {stats.failed} · Skipped {stats.skipped} · Bounced {stats.bounced} · Spam complaints {stats.complained}
+          </p>
+          <p className="muted hint">
+            * An estimate. Apple Mail opens every message automatically (counts as opened even if unread), and readers who block images
+            aren&apos;t counted. Clicks are exact.
+          </p>
+          {links.length > 0 && (
+            <div style={{ overflowX: "auto", marginTop: 12 }}>
+              <table className="list">
+                <thead>
+                  <tr>
+                    <th>Link</th>
+                    <th>Families</th>
+                    <th>Clicks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {links.map((l) => (
+                    <tr key={l.url}>
+                      <td style={{ overflowWrap: "anywhere" }}>
+                        {/^https?:\/\//i.test(l.url) ? (
+                          <a href={l.url} target="_blank" rel="noopener noreferrer">
+                            {l.url}
+                          </a>
+                        ) : (
+                          l.url
+                        )}
+                      </td>
+                      <td>{l.families}</td>
+                      <td>{l.clicks}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
       )}
 
       <section className="panel">
         <div className="panel-head">
           <h2>Recipients</h2>
-          {canViewRecipients && (
+          {canViewRecipients && editable && (
             <button type="button" className="link-btn" disabled={!c.segmentIds.length} onClick={() => setModal({ kind: "recipients" })}>
               View Selected Recipients
             </button>
@@ -618,7 +684,11 @@ export default function Composer(props: {
         </span>
         <RecipientPicker audiences={props.segments} value={c.segmentIds} disabled={!editable} onChange={(ids) => setField("segmentIds", ids)} />
         <p className="muted hint">
-          {!c.segmentIds.length
+          {!editable
+            ? stats
+              ? `Sent to ${stats.total} ${stats.total === 1 ? "family" : "families"}.`
+              : ""
+            : !c.segmentIds.length
             ? "Choose one or more audiences. Nobody is selected yet."
             : preview
               ? `${preview.recipients} ${preview.recipients === 1 ? "family" : "families"} will receive this. A family in more than one selected audience gets one copy.`

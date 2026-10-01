@@ -44,6 +44,7 @@ describe("schema", () => {
         "officer_audit",
         "officers",
         "segments",
+        "send_clicks",
         "sends",
         "sessions",
         "subscriber_segments",

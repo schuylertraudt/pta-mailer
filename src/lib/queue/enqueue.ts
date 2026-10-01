@@ -1,6 +1,6 @@
-import { count, eq, sql } from "drizzle-orm";
+import { count, desc, eq, sql, sum } from "drizzle-orm";
 import type { Db } from "@/db";
-import { campaigns, sends, subscribers } from "@/db/schema";
+import { campaigns, sendClicks, sends, subscribers } from "@/db/schema";
 import { DEFAULT_BRAND_ROW, getBrandRow } from "@/lib/brand";
 import { recipientFilter } from "@/lib/campaigns/recipients";
 import { archiveMode, renderCampaign } from "@/lib/campaigns/render";
@@ -64,6 +64,10 @@ export async function campaignStats(db: Db, campaignId: string) {
     .groupBy(sends.status);
   const by = Object.fromEntries(rows.map((r) => [r.status, r.n])) as Record<string, number>;
   const total = rows.reduce((a, r) => a + r.n, 0);
+  const [eng] = await db
+    .select({ opened: count(sends.firstOpenedAt), clicked: count(sends.firstClickedAt) })
+    .from(sends)
+    .where(eq(sends.campaignId, campaignId));
   return {
     total,
     queued: (by.queued ?? 0) + (by.sending ?? 0),
@@ -72,6 +76,21 @@ export async function campaignStats(db: Db, campaignId: string) {
     skipped: by.skipped ?? 0,
     bounced: by.bounced ?? 0,
     complained: by.complained ?? 0,
+    // Reached an inbox: the base for open and click rates.
+    delivered: (by.sent ?? 0) + (by.complained ?? 0),
+    opened: eng.opened,
+    clicked: eng.clicked,
   };
 }
 
+/** Clicks per link: how many families clicked it, and how many clicks in all. */
+export async function campaignLinks(db: Db, campaignId: string, limit = 50) {
+  return db
+    .select({ url: sendClicks.url, families: count(), clicks: sum(sendClicks.clicks).mapWith(Number) })
+    .from(sendClicks)
+    .innerJoin(sends, eq(sends.id, sendClicks.sendId))
+    .where(eq(sends.campaignId, campaignId))
+    .groupBy(sendClicks.url)
+    .orderBy(desc(count()), sendClicks.url)
+    .limit(limit);
+}

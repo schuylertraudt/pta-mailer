@@ -90,6 +90,10 @@ of it is a row in `sends`.
 - **A message goes to the union of its audiences, and to nobody until one is
   picked.** "All subscribers" is an audience of its own (rule `all`), so
   forgetting to choose recipients can never mail every family.
+- **Open and click tracking is SES's**, switched on by ticking Opens and
+  Clicks on the configuration set. The webhook counts them per send row and
+  per link (`send_clicks`); no IP or device is stored, and the admin UI shows
+  totals only. Unsubscribe and view-online links carry `ses:no-track`.
 - **Sender Display Name changes only the name** on the From line. The address
   stays the verified `EMAIL_FROM` address, and the name is stripped of quotes,
   angle brackets and control characters so it can't forge an address or header.

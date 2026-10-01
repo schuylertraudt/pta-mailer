@@ -195,7 +195,7 @@ registered or hosted: GoDaddy, Cloudflare, Google Domains/Squarespace, etc.).
 8. Wait for SES to show the identity as **Verified** and DKIM as
    **Successful** (usually under an hour; up to 72).
 
-### 2.3 Create the bounce/complaint notification topic
+### 2.3 Create the notification topic
 
 1. Open **Amazon SNS** → **Topics → Create topic**.
 2. Type **Standard**, name `pta-ses-events`. Create.
@@ -204,14 +204,22 @@ registered or hosted: GoDaddy, Cloudflare, Google Domains/Squarespace, etc.).
 
 ### 2.4 Create the configuration set
 
-This tells SES to report bounces and complaints to the topic.
+This tells SES to report bounces, complaints, opens and clicks to the topic.
 
 1. **SES → Configuration → Configuration sets → Create set**. Name
    `pta-newsletter`. Create.
 2. Open it → **Event destinations → Add destination**.
-3. Event types: tick **Hard bounces** and **Complaints** (the app ignores
-   other types; ticking Deliveries is harmless but adds noise).
+3. Event types: tick **Hard bounces**, **Complaints**, **Opens** and
+   **Clicks**. Ticking Opens and Clicks is what turns tracking on: SES then
+   adds an invisible image and routes links through its own address. The app
+   ignores other types; ticking Deliveries is harmless but adds noise.
 4. Destination **Amazon SNS**, name `to-app`, topic `pta-ses-events`. Save.
+
+**Already set this up without Opens and Clicks?** Open **SES → Configuration
+sets → `pta-newsletter` → Event destinations**, select `to-app` → **Edit**,
+tick **Opens** and **Clicks**, and save. Only messages sent after that are
+tracked. Cost: none at PTA volume (SES doesn't charge for tracking; the
+events fit in SNS's free monthly allowance).
 
 If SES reports it can't publish to the topic, open the topic in SNS → **Access
 policy → Edit** and add this statement inside `"Statement": [ ... ]` (put your

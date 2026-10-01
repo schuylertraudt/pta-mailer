@@ -39,13 +39,18 @@ export default function PrivacyPage() {
             that don&apos;t work or don&apos;t want our mail.
           </li>
           <li>
+            Whether you open each message and which links in it you click. Our email provider (Amazon) adds a tiny
+            invisible image and passes links through its own address to tell us this. We use it only as totals (for
+            example, how many families clicked a sign-up form) and we don&apos;t record your IP address or device. To avoid
+            open tracking, turn off automatic image loading in your email app.
+          </li>
+          <li>
             Your internet (IP) address, briefly, to stop automated sign-ups. It is kept for no more than a day and is not
             linked to your subscription.
           </li>
         </ul>
         <p>
-          We never ask for children&apos;s names or any information about students. We don&apos;t use tracking pixels, and
-          we don&apos;t record whether you open or click our emails. The signup pages set no cookies.
+          We never ask for children&apos;s names or any information about students. The signup pages set no cookies.
         </p>
 
         <h2>How we use it</h2>

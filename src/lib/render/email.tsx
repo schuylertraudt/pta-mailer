@@ -28,6 +28,13 @@ export type BrandForRender = {
   logoWidth: number | null;
 };
 
+/**
+ * Tells SES click tracking to leave a link alone: unsubscribing and viewing
+ * online aren't engagement, and the unsubscribe token shouldn't pass through a
+ * redirect.
+ */
+const NO_TRACK = { "ses:no-track": "" } as Record<string, string>;
+
 export type RenderMode =
   /** Outgoing campaign: footer carries the unsubscribe link (placeholder token until send time). */
   | { kind: "email"; unsubscribeUrl: string; viewOnlineUrl: string | null }
@@ -330,13 +337,13 @@ function Email({ input, ctx }: { input: RenderInput; ctx: Ctx }) {
                       <p className="fg-muted" style={small}>
                         {mode.kind === "email" ? (
                           <>
-                            <a href={mode.unsubscribeUrl} className="fg-link" style={linkStyle} data-role="unsubscribe">
+                            <a href={mode.unsubscribeUrl} className="fg-link" style={linkStyle} data-role="unsubscribe" {...NO_TRACK}>
                               Unsubscribe
                             </a>
                             {mode.viewOnlineUrl ? (
                               <>
                                 {" · "}
-                                <a href={mode.viewOnlineUrl} className="fg-link" style={linkStyle}>
+                                <a href={mode.viewOnlineUrl} className="fg-link" style={linkStyle} {...NO_TRACK}>
                                   View in browser
                                 </a>
                               </>
