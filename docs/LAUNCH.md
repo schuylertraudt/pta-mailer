@@ -105,10 +105,12 @@ Cloudflare R2 shown; S3 and Supabase Storage (S3 endpoint) work the same way.
 **Vercel**
 - [ ] Import the repo; set every variable from `.env.example` in Project →
       Settings → Environment Variables (Production).
-- [ ] `CRON_SECRET` set: `vercel.json` schedules `/api/cron/send-queue` every
-      minute and Vercel sends the secret automatically. (Per-minute crons need a
-      paid plan; on Hobby the send button still starts delivery immediately, but
-      retries wait for the daily cron.)
+- [ ] `CRON_SECRET` set: `vercel.json` schedules `/api/cron/send-queue` and
+      Vercel sends the secret automatically. It runs once a day because the free
+      Hobby plan refuses to deploy anything more frequent. Pressing Send already
+      delivers right away (about 600 emails per run at 10/second), so daily only
+      delays retries of temporary failures. On a paid plan, change the schedule
+      in `vercel.json` to `* * * * *` (every minute).
 - [ ] Build command runs `next build`. Run migrations from your machine against
       production before the first deploy and after every schema change:
       `DATABASE_URL=<prod url> npm run db:migrate`.

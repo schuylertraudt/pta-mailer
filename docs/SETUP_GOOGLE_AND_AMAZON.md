@@ -24,6 +24,32 @@ as the owner of both the Google Cloud project and the AWS account, and store
 its password in the PTA's password manager. Add a second person as a backup
 owner on each.
 
+## Do things in this order
+
+Some steps need the app to be online first (Google checks the privacy policy
+link; Amazon calls the app back), and some take days of waiting (DNS, Amazon
+approval), so start those early.
+
+1. **Deploy the app first, without Google or Amazon.** It runs with only five
+   settings: `DATABASE_URL`, `APP_URL`, `AUTH_SECRET`, `EMAIL_FROM` and
+   `STORAGE_PUBLIC_BASE_URL` (see LAUNCH.md, sections 4 and 5). Leave
+   `EMAIL_PROVIDER` unset: emails are then only written to the hosting logs, not
+   sent. Run the database migrations. Check that the signup page and
+   `https://<your address>/privacy` open.
+2. **Start Amazon's slow parts:** 2.1 and 2.2 (DNS can take up to 72 hours to
+   verify), then 2.6, the production-access request (Amazon reviews the website
+   you name, so it helps that it's live).
+3. **Google, all of Part 1**, using the live address for the redirect URI and
+   privacy link. After 1.6 you can log in and build newsletters.
+4. **Finish Amazon:** 2.3, 2.4, 2.5, 2.8, set the 2.9 variables and redeploy,
+   then 2.7 (connect the topic; the app must be live with `SNS_TOPIC_ARNS` set),
+   then 2.10.
+
+If you later move from a temporary address (like `*.vercel.app`) to the PTA's
+own domain, update everywhere the address appears: `APP_URL`, the Google
+redirect URI, authorized domain and privacy link (1.2, 1.4), and the SNS
+subscription endpoint (2.7).
+
 ---
 
 ## Part 1: Google login
