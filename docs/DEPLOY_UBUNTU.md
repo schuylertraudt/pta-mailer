@@ -206,6 +206,17 @@ present.`
 
 Two services: the website, and the worker that sends queued emails.
 
+The website uses port **3100** on the server itself (not reachable from the
+internet; nginx forwards to it in step 10). Make sure nothing else uses that
+port. This must print nothing:
+
+```bash
+sudo ss -ltnp | grep ':3100'
+```
+
+If something is already there, pick another free port and use it in place of
+3100 below and in step 10's `proxy_pass` line.
+
 ```bash
 sudo tee /etc/systemd/system/pta-web.service > /dev/null <<'EOF'
 [Unit]
@@ -216,7 +227,7 @@ After=network.target postgresql.service
 User=pta
 WorkingDirectory=/opt/pta-mailer/app
 EnvironmentFile=/etc/pta-mailer.env
-ExecStart=/usr/bin/npm start -- -H 127.0.0.1 -p 3000
+ExecStart=/usr/bin/npm start -- -H 127.0.0.1 -p 3100
 Restart=always
 RestartSec=5
 
@@ -249,7 +260,7 @@ Check both are running:
 
 ```bash
 systemctl status pta-web pta-worker --no-pager
-curl -sI http://127.0.0.1:3000 | head -1     # should print HTTP/1.1 200 OK
+curl -sI http://127.0.0.1:3100 | head -1     # should print HTTP/1.1 200 OK
 ```
 
 The website only listens on the server itself; nginx (next step) puts it on
@@ -282,7 +293,7 @@ server {
 
     # Everything else goes to the app.
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:3100;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-Proto $scheme;
@@ -428,6 +439,7 @@ From then on, `git pull` in "Updating to a new version" follows `main`.
 | Problem | What to check |
 | --- | --- |
 | Browser shows "502 Bad Gateway" | The website service isn't running: `systemctl status pta-web`, then `sudo journalctl -u pta-web -n 50` |
+| `pta-web` keeps restarting and its log says `EADDRINUSE` | Another program already uses port 3100. Find it with `sudo ss -ltnp \| grep ':3100'`, pick a free port, and change it in both `/etc/systemd/system/pta-web.service` (then `sudo systemctl daemon-reload && sudo systemctl restart pta-web`) and the nginx site's `proxy_pass` line (then `sudo nginx -t && sudo systemctl reload nginx`) |
 | Logs say "Invalid environment configuration" | A setting in `/etc/pta-mailer.env` is missing or malformed; the message names it |
 | No padlock / certificate error | DNS doesn't point at the server yet (step 1), or ports 80/443 are blocked (step 2). Run `sudo certbot --nginx -d mail.atreapta.com --redirect` again; its message says which |
 | Image upload fails with "413" or "Request Entity Too Large" | `client_max_body_size 12m;` is missing from the nginx site (step 10) |
