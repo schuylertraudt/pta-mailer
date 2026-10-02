@@ -5,7 +5,7 @@ Two one-time setups connect the app to outside services:
 - **Google** lets committee members and coordinators log in with their Google
   account. It is used for identity only (name and email), never Gmail access.
 - **Amazon SES** sends the messages and confirmation emails, and reports
-  bounces and spam complaints back to the app.
+  bounces, spam complaints, opens and clicks back to the app.
 
 Addresses used in this guide:
 
@@ -350,8 +350,8 @@ Restart the app (`sudo systemctl restart pta-web pta-worker`), then do 2.7.
 
 ### 2.10 Prove it works
 
-1. **Sending:** on a message, use **Send Preview** (it emails a copy to you only). It should arrive
-   within a minute. In Gmail, open it → ⋮ → **Show original**: SPF, DKIM and
+1. **Sending:** on a message, use **Send Preview** (it emails a copy to you
+   only). It should arrive within a minute. In Gmail, open it → ⋮ → **Show original**: SPF, DKIM and
    DMARC should all say **PASS**.
 2. **Bounces:** on the public signup page, subscribe
    `bounce@simulator.amazonses.com`. Amazon's simulator bounces the
@@ -359,13 +359,17 @@ Restart the app (`sudo systemctl restart pta-web pta-worker`), then do 2.7.
    **Subscribers** page with status **Bounced**.
 3. **Complaints:** do the same with `complaint@simulator.amazonses.com`; it
    should show **Marked as spam**.
+4. **Opens and clicks:** send a real message to an audience that includes you,
+   open it with images on, and click a link. Within a few minutes the
+   message's **Delivery** panel should show an open and a click, and the link
+   should appear in its table.
 
-If 2 or 3 don't change status: check the SNS subscription is **Confirmed** and
+If 2, 3 or 4 don't change: check the SNS subscription is **Confirmed** and
 `SES_CONFIGURATION_SET` matches the set name, then look at the website's log:
 `sudo journalctl -u pta-web -n 50 --no-pager`. A `403 Rejected: topic not
 allowed` there means `SNS_TOPIC_ARNS` doesn't match the topic's ARN exactly.
 
-If **Send test to me** doesn't arrive, the same log shows Amazon's error. The
+If **Send Preview** doesn't arrive, the same log shows Amazon's error. The
 common ones: "Email address is not verified" (still in the sandbox, 2.6, or
 `EMAIL_FROM` isn't on `mail.atreapta.com`), or "security token ... invalid"
 (the access key in 2.9 was copied wrong).
