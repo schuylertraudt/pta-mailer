@@ -272,7 +272,12 @@ verified one by one.
 
 1. **SES → Account dashboard → Request production access**.
 2. Mail type **Marketing**. Website URL: `https://mail.atreapta.com`.
-3. Use case description, for example:
+3. Additional contacts: the PTA role address. Preferred contact language:
+   English. Tick the acknowledgement of the AWS terms.
+4. Submit. The form no longer has a use-case description box. Amazon usually
+   answers within 24 hours, and often replies in the support case (**Support →
+   Support Center → Your support cases**) asking how you send mail. Reply there
+   with something like:
 
    > Newsletter for a school PTA with roughly 400 subscribing families, sent a
    > few times a month. Families subscribe through a double opt-in form on our
@@ -282,9 +287,6 @@ verified one by one.
    > complaint events to SNS and our application automatically and
    > permanently suppresses hard-bounced and complaining addresses. We do not
    > purchase or import lists.
-
-4. Submit. Amazon usually answers within 24 hours. If they ask questions,
-   answer them in the support case.
 
 While waiting, you can still test: under **Identities → Create identity →
 Email address**, verify your own email, and test-send to it.
