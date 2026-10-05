@@ -15,7 +15,7 @@ import { generateToken } from "@/lib/tokens";
 export const DEFAULT_BRAND = {
   primaryColor: "#1F4E79",
   accentColor: "#F2A900",
-  footerText: "You are receiving this because you subscribed to PTA news.",
+  footerText: "You are receiving this because you subscribed to the Atrea PTA mailing list.",
   ptaMailingAddress: "Example Elementary PTA, 123 Main St, Anytown, ST 00000",
 } as const;
 

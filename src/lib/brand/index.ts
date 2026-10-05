@@ -7,7 +7,7 @@ import type { BrandForRender } from "@/lib/render/email";
 export const DEFAULT_BRAND_ROW = {
   primaryColor: "#1F4E79",
   accentColor: "#F2A900",
-  footerText: "You're receiving this because you subscribed to PTA news.",
+  footerText: "You're receiving this because you subscribed to the Atrea PTA mailing list.",
   ptaMailingAddress: "PTA mailing address not set. An admin must set it before sending.",
 };
 
