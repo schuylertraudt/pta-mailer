@@ -142,6 +142,9 @@ export const subscribers = pgTable(
     consentAt: ts("consent_at").notNull(),
     confirmedAt: ts("confirmed_at"),
     confirmToken: text("confirm_token"),
+    // Set when the confirmation email couldn't be sent (e.g. the provider's daily
+    // limit); the send worker retries it.
+    confirmEmailDueAt: ts("confirm_email_due_at"),
     unsubscribeToken: text("unsubscribe_token").notNull(),
     createdAt: createdAt(),
   },
@@ -316,6 +319,21 @@ export const sends = pgTable(
     index("sends_campaign_status_idx").on(t.campaignId, t.status),
     index("sends_dispatch_idx").on(t.status, t.nextAttemptAt),
   ],
+);
+
+// Which email service sends, chosen on the admin Sending page (null: EMAIL_PROVIDER),
+// and a pause set when the service reports its sending quota is used up.
+export const sendingSettings = pgTable(
+  "sending_settings",
+  {
+    id: boolean("id").primaryKey().default(true),
+    provider: text("provider"),
+    pausedUntil: ts("paused_until"),
+    pauseReason: text("pause_reason"),
+    updatedBy: uuid("updated_by").references(() => officers.id),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [check("sending_settings_singleton", sql`${t.id}`), check("sending_settings_provider", sql`${t.provider} in ('ses', 'brevo')`)],
 );
 
 // One row per (send, link): which links each delivered copy had clicked.

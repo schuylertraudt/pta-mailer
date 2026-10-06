@@ -13,7 +13,7 @@ branded messages in a block editor, and send through Amazon SES.
 
 Next.js 16 (App Router, route handlers) · TypeScript · Postgres + Drizzle ORM ·
 Auth.js v5 (Google, database sessions) · TipTap editor · React Email · sharp ·
-S3-compatible storage (R2/S3/Supabase) · Amazon SES (provider interface) · Vitest.
+S3-compatible storage (R2/S3/Supabase) · Amazon SES or Brevo (provider interface) · Vitest.
 
 ## Local development
 
@@ -94,6 +94,12 @@ of it is a row in `sends`.
   Clicks on the configuration set. The webhook counts them per send row and
   per link (`send_clicks`); no IP or device is stored, and the admin UI shows
   totals only. Unsubscribe and view-online links carry `ses:no-track`.
+- **Two sending services, switchable by an admin.** SES and Brevo implement
+  the same `EmailProvider`; the Sending page stores the choice in
+  `sending_settings` (credentials stay in the environment). A provider's
+  quota error (`QuotaExceededError`, Brevo's 402) pauses the queue for an hour
+  without using up retries, and confirmations that failed at signup are
+  retried by the worker.
 - **Sender Display Name changes only the name** on the From line. The address
   stays the verified `EMAIL_FROM` address, and the name is stripped of quotes,
   angle brackets and control characters so it can't forge an address or header.

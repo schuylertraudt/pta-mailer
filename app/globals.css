@@ -119,6 +119,10 @@ button.link-btn:hover:not(:disabled) { text-decoration: underline; }
 .block-panel strong { display: block; margin-top: 12px; }
 .dropzone { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 28px 16px; border: 1.5px dashed var(--border); border-radius: 8px; text-align: center; cursor: pointer; font-size: 14px; }
 .dropzone:hover, .dropzone.over, .dropzone:focus-visible { border-color: var(--primary); background: var(--bg); }
+.provider-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+@media (max-width: 760px) { .provider-grid { grid-template-columns: minmax(0, 1fr); } }
+.panel.provider.on { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.warn-box { margin-top: 12px; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--warn); color: var(--fg); font-size: 14px; }
 .stat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 12px; }
 @media (max-width: 560px) { .stat-grid { grid-template-columns: minmax(0, 1fr); } }
 .stat { display: flex; flex-direction: column; gap: 2px; padding: 16px; background: var(--bg); border-radius: 8px; }

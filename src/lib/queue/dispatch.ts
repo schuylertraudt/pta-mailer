@@ -1,7 +1,8 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import type { Db } from "@/db";
 import { campaigns, sends, subscribers, suppressions } from "@/db/schema";
-import type { EmailProvider } from "@/lib/mail/provider";
+import { currentPause, pauseSending } from "@/lib/mail/active";
+import { QuotaExceededError, type EmailProvider } from "@/lib/mail/provider";
 import { fromHeader } from "@/lib/mail/sender";
 import { listUnsubscribeHeaders, UNSUBSCRIBE_TOKEN_PLACEHOLDER } from "@/lib/urls";
 
@@ -75,16 +76,21 @@ export async function processQueue(db: Db, provider: EmailProvider, opts: Dispat
   const sleep = opts.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
   const interval = 1000 / opts.ratePerSecond;
   const campaignCache = new Map<string, typeof campaigns.$inferSelect>();
-  const result = { sent: 0, failed: 0, skipped: 0, retried: 0 };
+  const result = { sent: 0, failed: 0, skipped: 0, retried: 0, paused: false };
   let lastSend = 0;
 
   await failStaleLeases(db);
+  if (await currentPause(db)) {
+    result.paused = true;
+    await finalizeCampaigns(db);
+    return result;
+  }
 
-  while (Date.now() - started < deadline) {
+  outer: while (Date.now() - started < deadline) {
     const batch = await claimBatch(db, opts.batchSize ?? 25);
     if (batch.length === 0) break;
 
-    for (const row of batch) {
+    for (const [i, row] of batch.entries()) {
       let c = campaignCache.get(row.campaign_id);
       if (!c) {
         [c] = await db.select().from(campaigns).where(eq(campaigns.id, row.campaign_id));
@@ -138,6 +144,17 @@ export async function processQueue(db: Db, provider: EmailProvider, opts: Dispat
         result.sent++;
       } catch (e) {
         const msg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+        if (e instanceof QuotaExceededError) {
+          // Nothing was sent. Put this row and the rest of the batch back, without
+          // using up their attempts, and pause the whole queue until the quota resets.
+          const until = await pauseSending(db, msg);
+          await db
+            .update(sends)
+            .set({ status: "queued", attempts: sql`greatest(${sends.attempts} - 1, 0)`, lastError: msg, nextAttemptAt: until })
+            .where(and(inArray(sends.id, batch.slice(i).map((r) => r.id)), eq(sends.status, "sending")));
+          result.paused = true;
+          break outer;
+        }
         if (isPermanent(e) || row.attempts >= MAX_ATTEMPTS) {
           await db.update(sends).set({ status: "failed", lastError: msg }).where(eq(sends.id, row.id));
           result.failed++;

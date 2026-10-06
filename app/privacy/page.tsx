@@ -39,7 +39,7 @@ export default function PrivacyPage() {
             that don&apos;t work or don&apos;t want our mail.
           </li>
           <li>
-            Whether you open each message and which links in it you click. Our email provider (Amazon) adds a tiny
+            Whether you open each message and which links in it you click. Our email provider (Amazon SES or Brevo) adds a tiny
             invisible image and passes links through its own address to tell us this. We use it only as totals (for
             example, how many families clicked a sign-up form) and we don&apos;t record your IP address or device. To avoid
             open tracking, turn off automatic image loading in your email app.
@@ -69,7 +69,7 @@ export default function PrivacyPage() {
 
         <h2>Services that handle the data for us</h2>
         <ul>
-          <li>Amazon Web Services (Amazon SES) delivers our emails.</li>
+          <li>Amazon Web Services (Amazon SES) or Brevo delivers our emails, depending on which we use at the time.</li>
           <li>Our website host and database provider store the subscriber list.</li>
           <li>Our file storage provider hosts the images that appear in messages.</li>
           <li>Google handles login for committee members and coordinators.</li>

@@ -25,6 +25,8 @@ export default defineConfig({
       STORAGE_PUBLIC_BASE_URL: "https://images.pta.example.org",
       SNS_TOPIC_ARNS: "arn:aws:sns:us-east-1:123456789012:pta-ses-events",
       CRON_SECRET: "cron-secret",
+      BREVO_API_KEY: "test-brevo-key",
+      BREVO_WEBHOOK_SECRET: "brevo-webhook-secret-123",
       SEND_RATE_PER_SECOND: "1000",
       BOOTSTRAP_ADMIN_EMAIL: "",
     },

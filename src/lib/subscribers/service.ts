@@ -1,10 +1,10 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import type { Db, DbOrTx } from "@/db";
 import { subscribers, suppressions } from "@/db/schema";
 import { emailSchema } from "@/lib/email";
 import { SCHOOLS } from "@/lib/schools";
-import { getEmailProvider } from "@/lib/mail/provider";
+import { getActiveProvider } from "@/lib/mail/active";
 import { simpleEmail } from "@/lib/mail/transactional";
 import { hitRateLimit } from "@/lib/rate-limit";
 import { generateToken } from "@/lib/tokens";
@@ -58,13 +58,24 @@ export async function subscribe(db: Db, raw: SubscribeInput, meta: { ip: string 
     // Re-subscribing after an unsubscribe requires a fresh double opt-in.
     await db
       .update(subscribers)
-      .set({ status: "pending", school: input.school, consentAt: now, confirmToken: token, confirmedAt: null })
+      .set({ status: "pending", school: input.school, consentAt: now, confirmToken: token, confirmedAt: null, confirmEmailDueAt: null })
       .where(eq(subscribers.id, existing.id));
   } else {
     // active, bounced, complained: nothing to do.
     return "noop";
   }
 
+  try {
+    await sendConfirmation(db, input.email, token);
+  } catch (e) {
+    // The family still sees "check your email"; the send worker retries.
+    console.error("confirmation email failed; will retry", e);
+    await db.update(subscribers).set({ confirmEmailDueAt: now }).where(eq(subscribers.email, input.email));
+  }
+  return "sent_confirmation";
+}
+
+async function sendConfirmation(db: DbOrTx, email: string, token: string) {
   const { html, text } = simpleEmail({
     heading: "Confirm your PTA mailing list subscription",
     paragraphs: [
@@ -74,8 +85,27 @@ export async function subscribe(db: Db, raw: SubscribeInput, meta: { ip: string 
     button: { label: "Confirm subscription", url: confirmPageUrl(token) },
     footer: "This link expires in 7 days.",
   });
-  await getEmailProvider().send({ to: input.email, subject: "Confirm your PTA mailing list subscription", html, text });
-  return "sent_confirmation";
+  await (await getActiveProvider(db)).send({ to: email, subject: "Confirm your PTA mailing list subscription", html, text });
+}
+
+/**
+ * Retries confirmation emails that couldn't be sent at signup (e.g. the
+ * provider's daily limit). Stops at the first failure; the next run tries again.
+ */
+export async function sendDueConfirmations(db: Db, limit = 50) {
+  const due = await db
+    .select({ id: subscribers.id, email: subscribers.email, token: subscribers.confirmToken })
+    .from(subscribers)
+    .where(and(eq(subscribers.status, "pending"), isNotNull(subscribers.confirmEmailDueAt), isNotNull(subscribers.confirmToken)))
+    .orderBy(subscribers.confirmEmailDueAt)
+    .limit(limit);
+  let sent = 0;
+  for (const s of due) {
+    await sendConfirmation(db, s.email, s.token!);
+    await db.update(subscribers).set({ confirmEmailDueAt: null }).where(eq(subscribers.id, s.id));
+    sent++;
+  }
+  return sent;
 }
 
 export async function findPendingByConfirmToken(db: DbOrTx, token: string) {

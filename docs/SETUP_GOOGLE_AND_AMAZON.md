@@ -1,4 +1,4 @@
-# Setting up Google (team login) and Amazon (sending email)
+# Setting up Google (team login), Amazon and Brevo (sending email)
 
 Two one-time setups connect the app to outside services:
 
@@ -6,6 +6,8 @@ Two one-time setups connect the app to outside services:
   account. It is used for identity only (name and email), never Gmail access.
 - **Amazon SES** sends the messages and confirmation emails, and reports
   bounces, spam complaints, opens and clicks back to the app.
+- **Brevo** (optional, Part 3) is a second sending service. Admins switch
+  between Amazon and Brevo on the app's Sending page.
 
 Addresses used in this guide:
 
@@ -378,6 +380,91 @@ common ones: "Email address is not verified" (still in the sandbox, 2.6, or
 
 ---
 
+## Part 3: Brevo (alternative to Amazon)
+
+Brevo is a second email service the app can send through. With both set up,
+an admin switches between them on the app's **Sending** page with one click.
+Use it while Amazon keeps the account in its sandbox, or as a fallback.
+
+Cost: the free plan sends 300 emails a day and adds a small Brevo logo to each
+email. When the daily limit is reached, the app pauses and sends the rest
+automatically once the limit resets (it checks every hour); an admin can
+switch to Amazon to send them right away. Paid plans (about $9 a month for
+5,000 emails, plus about $9 a month to remove the logo) have no daily limit.
+
+### 3.1 Create the account
+
+1. Sign up at <https://www.brevo.com> with the PTA role email. Fill in the
+   organization details it asks for (name, address, website
+   `https://mail.atreapta.com`). Brevo reviews new accounts before allowing
+   larger sends; answer its questions the same way as Amazon's (2.6).
+
+### 3.2 Authenticate the sending domain
+
+1. **Senders, Domains & Dedicated IPs → Domains → Add a domain**:
+   `mail.atreapta.com`.
+2. Choose to authenticate it yourself and add every DNS record Brevo shows
+   (a `brevo-code` TXT record and DKIM records). They sit alongside Amazon's
+   records without conflict. Keep the existing DMARC record (2.2 step 7).
+3. Wait until Brevo shows the domain as **Authenticated**.
+4. **Senders → Add a sender**: name `Atrea PTA`, email
+   `news@mail.atreapta.com` (the address in `EMAIL_FROM`).
+
+### 3.3 Create the API key
+
+1. **SMTP & API → API keys → Generate a new API key**. Name it `pta-mailer`.
+2. Copy it now; Brevo shows it only once.
+3. If Brevo has **Authorized IPs** turned on for the account (Security
+   settings), add the server's IP address, or sends fail with "unrecognised
+   IP address". The server's address: `curl -4 ifconfig.me` on the server.
+
+### 3.4 Give the values to the app
+
+Make a webhook secret on the server:
+
+```bash
+openssl rand -hex 32
+```
+
+Add these lines to the end of `/etc/pta-mailer.env`:
+
+```bash
+BREVO_API_KEY=<the API key from 3.3>
+BREVO_WEBHOOK_SECRET=<the output of openssl rand -hex 32>
+```
+
+Restart. The Sending page now shows Brevo as **Ready**.
+
+### 3.5 Connect Brevo's reports (bounces, spam, opens, clicks)
+
+1. In Brevo: **Transactional → Settings → Webhooks** (or **Settings →
+   Webhooks → Transactional**) → **Add a new webhook**.
+2. URL: `https://mail.atreapta.com/api/webhooks/brevo`
+3. Authentication: **Bearer token**, value = your `BREVO_WEBHOOK_SECRET`.
+   If there's no authentication option, use this URL instead:
+   `https://mail.atreapta.com/api/webhooks/brevo?token=<BREVO_WEBHOOK_SECRET>`.
+4. Events: tick **Hard bounce**, **Invalid email**, **Spam** (complaint),
+   **Blocked**, **Unsubscribed**, **Opened**, **First opening** and
+   **Clicked**. Save.
+
+Without this, Brevo still sends, but bounced and complaining addresses aren't
+suppressed automatically and opens and clicks stay at 0.
+
+### 3.6 Switch and test
+
+1. In the app: **Sending → Use Brevo → Yes, switch**.
+2. On a message, **Send Preview**. It should arrive within a minute (check
+   spam the first time).
+3. To go back: **Sending → Use Amazon SES**. Switching affects emails not yet
+   sent, including any waiting in the queue; delivered ones are unaffected.
+
+If Send Preview fails, the red message on the page includes Brevo's reason:
+`401` (wrong API key, or the server's IP isn't authorized, 3.3),
+`400 ... sender` (the sender or domain in 3.2 isn't verified), or
+`402` (daily limit or credits used up).
+
+---
+
 ## All the variables in one place
 
 | Variable | From |
@@ -391,6 +478,7 @@ common ones: "Email address is not verified" (still in the sandbox, 2.6, or
 | `SNS_TOPIC_ARNS` | 2.3 |
 | `SEND_RATE_PER_SECOND` | 2.6 |
 | `UNSUBSCRIBE_MAILTO` | 2.8 |
+| `BREVO_API_KEY`, `BREVO_WEBHOOK_SECRET` | Brevo, 3.3 and 3.4 |
 
 The database, image storage and backups are covered in
 [DEPLOY_UBUNTU.md](DEPLOY_UBUNTU.md).

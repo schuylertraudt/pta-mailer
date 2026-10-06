@@ -366,6 +366,7 @@ export default function Composer(props: {
   const [menu, setMenu] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
   const [links, setLinks] = useState<LinkStat[]>([]);
+  const [pause, setPause] = useState<{ until: string; reason: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const canSend = props.role !== "drafter";
   const canViewRecipients = props.role !== "drafter";
@@ -458,10 +459,12 @@ export default function Composer(props: {
     if (c.status !== "sending" && c.status !== "sent" && c.status !== "failed") return;
     let stop = false;
     const tick = async () => {
-      const { stats, links } = await api<{ stats: Stats; links: LinkStat[] }>(`/api/campaigns/${c.id}/stats`);
+      const res = await api<{ stats: Stats; links: LinkStat[]; pause: { until: string; reason: string } | null }>(`/api/campaigns/${c.id}/stats`);
       if (stop) return;
-      setStats(stats);
-      setLinks(links);
+      setStats(res.stats);
+      setLinks(res.links);
+      setPause(res.pause);
+      const stats = res.stats;
       if (c.status === "sending" && stats.queued === 0) router.refresh();
     };
     void tick();
@@ -630,6 +633,14 @@ export default function Composer(props: {
               <span className="muted">Clicked a link ({stats.clicked})</span>
             </div>
           </div>
+          {pause && stats.queued > 0 && (
+            <div className="warn-box" role="status">
+              The email service&apos;s daily limit is used up. The {stats.queued} remaining {stats.queued === 1 ? "email goes" : "emails go"} out
+              automatically when it resets (checked hourly, next around{" "}
+              {new Date(pause.until).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}). An admin can send them now by switching
+              services on the Sending page.
+            </div>
+          )}
           <p className="muted hint">
             Queued {stats.queued} · Failed {stats.failed} · Skipped {stats.skipped} · Bounced {stats.bounced} · Spam complaints {stats.complained}
           </p>

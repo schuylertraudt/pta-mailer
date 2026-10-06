@@ -64,6 +64,13 @@
       "when": 1790891260882,
       "tag": "0008_open_click_tracking",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791296216988,
+      "tag": "0009_brevo_and_sending_settings",
+      "breakpoints": true
     }
   ]
 }

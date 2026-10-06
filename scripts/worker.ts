@@ -16,7 +16,7 @@ for (const sig of ["SIGINT", "SIGTERM"] as const) {
 while (!stopping) {
   try {
     const r = await runQueueOnce();
-    if (r.sent || r.failed || r.retried || r.skipped) console.log(new Date().toISOString(), r);
+    if (r.sent || r.failed || r.retried || r.skipped || r.confirmations) console.log(new Date().toISOString(), r);
   } catch (e) {
     console.error("queue run failed", e);
   }

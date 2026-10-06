@@ -1,6 +1,7 @@
 import MailComposer from "nodemailer/lib/mail-composer";
 import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 import { env } from "@/lib/env";
+import { parseFrom } from "@/lib/mail/sender";
 
 export type OutboundEmail = {
   to: string;
@@ -92,23 +93,92 @@ export class ConsoleProvider extends MemoryProvider {
   }
 }
 
-let provider: EmailProvider | undefined;
+/**
+ * The provider's sending quota is used up (e.g. Brevo's free-plan daily cap).
+ * Not a per-message failure: the queue pauses and resumes later.
+ */
+export class QuotaExceededError extends Error {
+  override name = "QuotaExceeded";
+}
 
-export function getEmailProvider(): EmailProvider {
-  if (!provider) {
+/** Brevo transactional API (POST /v3/smtp/email). */
+export class BrevoProvider implements EmailProvider {
+  readonly name = "brevo";
+  constructor(
+    private opts: { apiKey: string; endpoint?: string },
+    private fetchImpl: typeof fetch = fetch,
+  ) {}
+  async send(msg: OutboundEmail): Promise<SendResult> {
+    const from = parseFrom(msg.from ?? env().EMAIL_FROM);
+    const replyTo = msg.replyTo ?? env().EMAIL_REPLY_TO;
+    const res = await this.fetchImpl(this.opts.endpoint ?? "https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: { "api-key": this.opts.apiKey, "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({
+        sender: from.name ? { name: from.name, email: from.address } : { email: from.address },
+        to: [{ email: msg.to }],
+        ...(replyTo && { replyTo: { email: parseFrom(replyTo).address } }),
+        subject: msg.subject,
+        htmlContent: msg.html,
+        textContent: msg.text,
+        ...(msg.headers && { headers: msg.headers }),
+      }),
+      signal: AbortSignal.timeout(20_000),
+    });
+    const body = (await res.json().catch(() => ({}))) as { messageId?: string; code?: string; message?: string };
+    if (res.ok && body.messageId) return { messageId: body.messageId };
+    const detail = `Brevo ${res.status}${body.code ? ` ${body.code}` : ""}: ${body.message ?? res.statusText}`;
+    // 402: out of credits / daily limit reached.
+    if (res.status === 402) throw new QuotaExceededError(detail);
+    const err = new Error(detail);
+    // 400 means this message will never be accepted; 401/403/429/5xx may clear up.
+    err.name = res.status === 400 ? "BadRequestException" : res.status === 429 ? "Throttled" : "BrevoError";
+    throw err;
+  }
+}
+
+export type ProviderName = "ses" | "brevo";
+
+/** Which real providers have credentials in the environment. */
+export function configuredProviders(): Record<ProviderName, boolean> {
+  const e = env();
+  return { ses: !!(e.SES_REGION && e.SES_ACCESS_KEY_ID && e.SES_SECRET_ACCESS_KEY), brevo: !!e.BREVO_API_KEY };
+}
+
+const instances = new Map<string, EmailProvider>();
+
+/** A provider by name, built once. `console`/`memory` are for development and tests. */
+export function providerByName(name: ProviderName | "console" | "memory"): EmailProvider {
+  let p = instances.get(name);
+  if (!p) {
     const e = env();
-    provider =
-      e.EMAIL_PROVIDER === "ses"
+    p =
+      name === "ses"
         ? new SesProvider({
             region: e.SES_REGION,
             configurationSet: e.SES_CONFIGURATION_SET,
             accessKeyId: e.SES_ACCESS_KEY_ID,
             secretAccessKey: e.SES_SECRET_ACCESS_KEY,
           })
-        : e.EMAIL_PROVIDER === "memory"
-          ? new MemoryProvider()
-          : new ConsoleProvider();
+        : name === "brevo"
+          ? new BrevoProvider({ apiKey: e.BREVO_API_KEY ?? "" })
+          : name === "memory"
+            ? new MemoryProvider()
+            : new ConsoleProvider();
+    instances.set(name, p);
   }
+  return p;
+}
+
+let provider: EmailProvider | undefined;
+
+/** The provider named by EMAIL_PROVIDER (or a test override). Prefer getActiveProvider(db). */
+export function getEmailProvider(): EmailProvider {
+  return provider ?? providerByName(env().EMAIL_PROVIDER);
+}
+
+/** Test hook: route every send through `p` regardless of settings. */
+export function overriddenProvider(): EmailProvider | undefined {
   return provider;
 }
 

@@ -8,7 +8,8 @@ const schema = z.object({
   APP_URL: z.url().transform((u) => u.replace(/\/+$/, "")),
   AUTH_SECRET: z.string().min(16),
 
-  EMAIL_PROVIDER: z.enum(["ses", "memory", "console"]).default("console"),
+  // The provider used until an admin picks one on the Sending page.
+  EMAIL_PROVIDER: z.enum(["ses", "brevo", "memory", "console"]).default("console"),
   // Role address on the PTA domain, e.g. "Example PTA <news@pta.example.org>". Never personal.
   EMAIL_FROM: z
     .string()
@@ -21,6 +22,9 @@ const schema = z.object({
   SES_ACCESS_KEY_ID: z.string().optional(),
   SES_SECRET_ACCESS_KEY: z.string().optional(),
   SES_CONFIGURATION_SET: z.string().optional(),
+  // Brevo (transactional email API). The webhook secret authenticates Brevo's event callbacks.
+  BREVO_API_KEY: z.string().optional(),
+  BREVO_WEBHOOK_SECRET: z.string().min(16).optional(),
   // Messages per second allowed by the provider account (SES default production quota is 14).
   SEND_RATE_PER_SECOND: z.coerce.number().positive().default(10),
 

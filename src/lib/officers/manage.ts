@@ -5,7 +5,7 @@ import type { Db, DbOrTx } from "@/db";
 import { officerAudit, officers, sessions } from "@/db/schema";
 import { emailSchema } from "@/lib/email";
 import type { Role } from "@/lib/auth/roles";
-import { getEmailProvider } from "@/lib/mail/provider";
+import { getActiveProvider } from "@/lib/mail/active";
 import { simpleEmail } from "@/lib/mail/transactional";
 import { env } from "@/lib/env";
 import { lockAdminSet } from "./locks";
@@ -106,7 +106,7 @@ async function notify(db: Db, actor: Actor, change: Change) {
       paragraphs: [detail, "If this wasn't expected, log in and review the team list and audit log now."],
       button: { label: "Review team", url: `${env().APP_URL}/admin/team` },
     });
-    const provider = getEmailProvider();
+    const provider = await getActiveProvider(db);
     await Promise.all([...to].map((addr) => provider.send({ to: addr, subject, html, text })));
   } catch (e) {
     console.error("officer notification failed", e);

@@ -1,8 +1,7 @@
-import { eq, sql } from "drizzle-orm";
 import type { Db } from "@/db";
-import { sendClicks, sends } from "@/db/schema";
 import { normalizeEmail } from "@/lib/email";
-import { suppressEmail, unsubscribeByToken } from "@/lib/subscribers/service";
+import { unsubscribeByToken } from "@/lib/subscribers/service";
+import { eventTime, recordClick, recordOpen, recordSuppression } from "./delivery-events";
 
 type Recipient = { emailAddress: string };
 export type SesEvent = {
@@ -14,13 +13,6 @@ export type SesEvent = {
   open?: { timestamp?: string };
   click?: { timestamp?: string; link?: string };
 };
-
-const MAX_URL = 2000;
-
-function eventTime(ts: string | undefined) {
-  const d = ts ? new Date(ts) : new Date();
-  return Number.isNaN(d.getTime()) ? new Date() : d;
-}
 
 // "Name <addr>" or bare address
 const addr = (s: string) => normalizeEmail(/<([^>]+)>/.exec(s)?.[1] ?? s);
@@ -40,53 +32,23 @@ export async function handleSesEvent(db: Db, e: SesEvent): Promise<string> {
 
   if (type === "Bounce" && e.bounce) {
     if (e.bounce.bounceType !== "Permanent") return "ignored transient bounce";
-    await db.transaction(async (tx) => {
-      for (const r of e.bounce!.bouncedRecipients) {
-        await suppressEmail(tx, addr(r.emailAddress), "bounce", `ses:bounce:${e.bounce!.bounceSubType ?? "General"}`);
-      }
-      if (messageId) await tx.update(sends).set({ status: "bounced" }).where(eq(sends.providerMessageId, messageId));
-    });
+    const emails = e.bounce.bouncedRecipients.map((r) => addr(r.emailAddress));
+    await recordSuppression(db, "bounce", emails, `ses:bounce:${e.bounce.bounceSubType ?? "General"}`, messageId);
     return "bounce suppressed";
   }
 
   if (type === "Complaint" && e.complaint) {
-    await db.transaction(async (tx) => {
-      for (const r of e.complaint!.complainedRecipients) {
-        await suppressEmail(tx, addr(r.emailAddress), "complaint", `ses:complaint:${e.complaint!.complaintFeedbackType ?? "abuse"}`);
-      }
-      if (messageId) await tx.update(sends).set({ status: "complained" }).where(eq(sends.providerMessageId, messageId));
-    });
+    const emails = e.complaint.complainedRecipients.map((r) => addr(r.emailAddress));
+    await recordSuppression(db, "complaint", emails, `ses:complaint:${e.complaint.complaintFeedbackType ?? "abuse"}`, messageId);
     return "complaint suppressed";
   }
 
   if (type === "Open" && messageId) {
-    const at = eventTime(e.open?.timestamp);
-    const rows = await db
-      .update(sends)
-      .set({ openCount: sql`${sends.openCount} + 1`, firstOpenedAt: sql`least(coalesce(${sends.firstOpenedAt}, ${at}), ${at})` })
-      .where(eq(sends.providerMessageId, messageId))
-      .returning({ id: sends.id });
-    return rows.length ? "open recorded" : "ignored open";
+    return (await recordOpen(db, messageId, eventTime(e.open?.timestamp))) ? "open recorded" : "ignored open";
   }
 
   if (type === "Click" && messageId) {
-    const at = eventTime(e.click?.timestamp);
-    const url = (e.click?.link ?? "").slice(0, MAX_URL);
-    return db.transaction(async (tx) => {
-      const [row] = await tx
-        .update(sends)
-        .set({ clickCount: sql`${sends.clickCount} + 1`, firstClickedAt: sql`least(coalesce(${sends.firstClickedAt}, ${at}), ${at})` })
-        .where(eq(sends.providerMessageId, messageId))
-        .returning({ id: sends.id });
-      if (!row) return "ignored click";
-      if (url) {
-        await tx
-          .insert(sendClicks)
-          .values({ sendId: row.id, url, firstAt: at })
-          .onConflictDoUpdate({ target: [sendClicks.sendId, sendClicks.url], set: { clicks: sql`${sendClicks.clicks} + 1` } });
-      }
-      return "click recorded";
-    });
+    return recordClick(db, messageId, e.click?.link, eventTime(e.click?.timestamp));
   }
 
   if (type === "Received") {
