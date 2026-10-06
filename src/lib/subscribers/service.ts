@@ -6,6 +6,8 @@ import { emailSchema } from "@/lib/email";
 import { SCHOOLS } from "@/lib/schools";
 import { getActiveProvider } from "@/lib/mail/active";
 import { simpleEmail } from "@/lib/mail/transactional";
+import { DEFAULT_BRAND_ROW, getBrandRow } from "@/lib/brand";
+import { SITE } from "@/lib/site";
 import { hitRateLimit } from "@/lib/rate-limit";
 import { generateToken } from "@/lib/tokens";
 import { confirmPageUrl } from "@/lib/urls";
@@ -75,17 +77,25 @@ export async function subscribe(db: Db, raw: SubscribeInput, meta: { ip: string 
   return "sent_confirmation";
 }
 
+/**
+ * The double opt-in email. It names the organization and its postal address:
+ * a recognizable sender and real-looking content help it stay out of spam,
+ * which matters most while the sending domain is new.
+ */
 async function sendConfirmation(db: DbOrTx, email: string, token: string) {
+  const brand = await getBrandRow(db);
+  const address = brand.ptaMailingAddress === DEFAULT_BRAND_ROW.ptaMailingAddress ? "" : brand.ptaMailingAddress;
+  const subject = `Confirm your ${SITE.shortName} email signup`;
   const { html, text } = simpleEmail({
-    heading: "Confirm your PTA mailing list subscription",
+    heading: subject,
     paragraphs: [
-      "Someone (hopefully you) asked to receive PTA news at this address.",
-      "Tap the button below to confirm. If this wasn't you, ignore this email and you won't hear from us.",
+      `Thanks for signing up for email updates from the ${SITE.shortName} (${SITE.orgName.replace(/^the /, "")}).`,
+      "Tap the button below to confirm your email address. If you didn't sign up, ignore this email and you won't hear from us.",
     ],
-    button: { label: "Confirm subscription", url: confirmPageUrl(token) },
-    footer: "This link expires in 7 days.",
+    button: { label: "Confirm my signup", url: confirmPageUrl(token) },
+    footer: [`This link expires in 7 days.`, SITE.shortName, address].filter(Boolean).join(" · "),
   });
-  await (await getActiveProvider(db)).send({ to: email, subject: "Confirm your PTA mailing list subscription", html, text });
+  await (await getActiveProvider(db)).send({ to: email, subject, html, text });
 }
 
 /**

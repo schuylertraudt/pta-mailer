@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
-import { subscribers, suppressions } from "@/db/schema";
+import { brandSettings, subscribers, suppressions } from "@/db/schema";
 import { issueFormToken, checkFormToken } from "@/lib/subscribers/form-token";
 import {
   confirmSubscription,
@@ -40,6 +40,16 @@ describe("subscribe + double opt-in", () => {
     expect(mailbox().sent).toHaveLength(1);
     expect(mailbox().sent[0].to).toBe("new@example.com");
     expect(confirmTokenFromMail()).toBe(row.confirmToken);
+  });
+
+  it("names the PTA and its postal address in the confirmation email", async () => {
+    await db.insert(brandSettings).values({ primaryColor: "#1F4E79", accentColor: "#F2A900", footerText: "f", ptaMailingAddress: "Atrea PTA, PO Box 456, Town, ST 12345" });
+    await subscribe(db, { email: "named@example.com", school: "Okte" }, { ip: ip() });
+    const m = mailbox().sent.at(-1)!;
+    expect(m.subject).toBe("Confirm your Atrea PTA email signup");
+    expect(m.text).toContain("email updates from the Atrea PTA");
+    expect(m.text).toContain("PO Box 456");
+    expect(m.html).toContain("PO Box 456");
   });
 
   it("activates only when the confirmation link is used", async () => {
