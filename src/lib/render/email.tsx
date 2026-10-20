@@ -49,7 +49,11 @@ export type RenderInput = {
   mode: RenderMode;
   /** Preview only: apply the dark-mode overrides unconditionally. */
   forceDark?: boolean;
+  /** Documents listed as download links under the message. */
+  attachments?: Attachment[];
 };
+
+export type Attachment = { name: string; url: string; size: string };
 
 const TEXT = "#222222";
 const MUTED = "#666666";
@@ -322,6 +326,27 @@ function Email({ input, ctx }: { input: RenderInput; ctx: Ctx }) {
                     </td>
                   </tr>
                 </PTable>
+                {input.attachments?.length ? (
+                  <PTable>
+                    <tr>
+                      <td className="pad" style={{ padding: "0 24px 16px" }}>
+                        <p className="fg" style={{ ...base, fontWeight: "bold", margin: "0 0 8px" }}>
+                          Attachments
+                        </p>
+                        {input.attachments.map((a, i) => (
+                          <p key={i} className="fg" style={{ ...base, margin: "0 0 6px" }}>
+                            <a href={a.url} target="_blank" className="fg-link" style={{ ...linkStyle, fontWeight: "bold" }}>
+                              {a.name}
+                            </a>{" "}
+                            <span className="fg-muted" style={{ color: MUTED, fontSize: 13 }}>
+                              ({a.size})
+                            </span>
+                          </p>
+                        ))}
+                      </td>
+                    </tr>
+                  </PTable>
+                ) : null}
                 {/* Footer: injected, not editable. Always carries the unsubscribe link in email mode. */}
                 <PTable>
                   <tr>

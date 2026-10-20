@@ -71,6 +71,13 @@
       "when": 1791296216988,
       "tag": "0009_brevo_and_sending_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792506515583,
+      "tag": "0010_message_attachments",
+      "breakpoints": true
     }
   ]
 }

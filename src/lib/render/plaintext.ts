@@ -1,5 +1,5 @@
 import type { Block, Doc, Inline, ListItem } from "@/lib/editor/model";
-import type { BrandForRender, RenderMode } from "./email";
+import type { Attachment, BrandForRender, RenderMode } from "./email";
 
 function inlineToText(content: Inline[] | undefined): string {
   return (content ?? [])
@@ -57,8 +57,14 @@ function blockToText(b: Block): string | null {
 }
 
 /** Plaintext alternative generated from the same document as the HTML part. */
-export function renderPlaintext(doc: Doc, brand: Pick<BrandForRender, "footerText" | "ptaMailingAddress">, mode: RenderMode): string {
-  const body = doc.content.map(blockToText).filter(Boolean).join("\n\n");
+export function renderPlaintext(
+  doc: Doc,
+  brand: Pick<BrandForRender, "footerText" | "ptaMailingAddress">,
+  mode: RenderMode,
+  attachments: Attachment[] = [],
+): string {
+  const files = attachments.length ? ["Attachments:", ...attachments.map((a) => `- ${a.name} (${a.size}): ${a.url}`)].join("\n") : "";
+  const body = [...doc.content.map(blockToText), files].filter(Boolean).join("\n\n");
   const footer = [
     "--",
     brand.footerText,

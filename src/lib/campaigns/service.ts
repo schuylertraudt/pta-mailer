@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, max, ne } from "drizzle-orm";
 import { z } from "zod";
 import type { Db, DbOrTx } from "@/db";
-import { campaigns, officers, segments } from "@/db/schema";
+import { campaigns, files, officers, segments } from "@/db/schema";
 import { EMPTY_DOC } from "@/lib/editor/model";
 import { sanitizeDoc } from "@/lib/editor/sanitize";
 import { env } from "@/lib/env";
@@ -25,6 +25,7 @@ export const campaignPatch = z.object({
   preheader: z.string().max(200).optional(),
   bodyJson: z.unknown().optional(),
   segmentIds: z.array(z.uuid()).max(100).optional(),
+  attachmentIds: z.array(z.uuid()).max(10).optional(),
   fromName: z.string().max(200).transform(cleanSenderName).optional(),
   showInArchive: z.boolean().optional(),
 });
@@ -96,6 +97,11 @@ export async function updateCampaign(db: Db, id: string, raw: z.input<typeof cam
       const found = patch.segmentIds.length ? await tx.select({ id: segments.id }).from(segments).where(inArray(segments.id, patch.segmentIds)) : [];
       if (found.length !== patch.segmentIds.length) throw new CampaignError(400, "Unknown audience");
     }
+    if (patch.attachmentIds) {
+      patch.attachmentIds = [...new Set(patch.attachmentIds)];
+      const found = patch.attachmentIds.length ? await tx.select({ id: files.id }).from(files).where(inArray(files.id, patch.attachmentIds)) : [];
+      if (found.length !== patch.attachmentIds.length) throw new CampaignError(400, "Unknown attachment");
+    }
     const [row] = await tx
       .update(campaigns)
       .set({
@@ -104,6 +110,7 @@ export async function updateCampaign(db: Db, id: string, raw: z.input<typeof cam
         ...(patch.bodyJson !== undefined && { bodyJson: sanitizeDoc(patch.bodyJson, env().STORAGE_PUBLIC_BASE_URL) }),
         ...(patch.segmentIds !== undefined && { segmentIds: patch.segmentIds }),
         ...(patch.fromName !== undefined && { fromName: patch.fromName }),
+        ...(patch.attachmentIds !== undefined && { attachmentIds: patch.attachmentIds }),
         ...(patch.showInArchive !== undefined && { showInArchive: patch.showInArchive }),
         status: "draft",
         approvedBy: null,

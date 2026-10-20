@@ -22,6 +22,7 @@ type Campaign = {
   bodyJson: unknown;
   segmentIds: string[];
   fromName: string;
+  attachmentIds: string[];
   showInArchive: boolean;
   status: Status;
 };
@@ -309,15 +310,27 @@ function BlockPanel({ editor, onReplaceImage }: { editor: Editor; onReplaceImage
   );
 }
 
-function Dropzone(props: { onFile: (f: File) => void; onBrowse: () => void }) {
+const IMAGE_FILE = /\.(jpe?g|png|gif|webp|heic|heif)$/i;
+const DOC_ACCEPT = ".pdf,.docx,.xlsx,.pptx,.doc,.xls,.ppt";
+const IMAGE_ACCEPT = "image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif,.heic,.heif";
+
+export type AttachedFile = { id: string; name: string; bytes: number };
+
+const fmtBytes = (n: number) => (n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / (1024 * 1024)).toFixed(1)} MB`);
+
+/** One drop target: photos go into the message, documents are attached as download links. */
+function Dropzone(props: { onImage: (f: File) => void; onDocument: (f: File) => void; busy: boolean }) {
   const [drag, setDrag] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  const take = (f: File) => (f.type.startsWith("image/") || IMAGE_FILE.test(f.name) ? props.onImage(f) : props.onDocument(f));
   return (
     <div
       className={drag ? "dropzone over" : "dropzone"}
       role="button"
       tabIndex={0}
-      onClick={props.onBrowse}
-      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), props.onBrowse())}
+      aria-busy={props.busy}
+      onClick={() => input.current?.click()}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), input.current?.click())}
       onDragOver={(e) => {
         e.preventDefault();
         setDrag(true);
@@ -326,17 +339,29 @@ function Dropzone(props: { onFile: (f: File) => void; onBrowse: () => void }) {
       onDrop={(e) => {
         e.preventDefault();
         setDrag(false);
-        const f = e.dataTransfer.files[0];
-        if (f) props.onFile(f);
+        for (const f of Array.from(e.dataTransfer.files)) take(f);
       }}
     >
       <span className="dropzone-icon">
         <Icon name="upload" size={28} />
       </span>
-      <span>Drag &amp; drop a photo to add it to the message, or select a file</span>
+      <span>{props.busy ? "Uploading…" : "Drag & drop a photo or document, or select a file"}</span>
       <span className="muted" style={{ fontSize: 12 }}>
-        JPG, PNG, GIF, WebP or HEIC up to 10 MB. Resized and stripped of location data automatically.
+        Photos (JPG, PNG, GIF, WebP, HEIC) go into the message. Documents (PDF, Word .docx, Excel .xlsx, PowerPoint .pptx) are attached as
+        download links. Up to 10 MB each.
       </span>
+      <input
+        ref={input}
+        type="file"
+        hidden
+        multiple
+        accept={`${IMAGE_ACCEPT},${DOC_ACCEPT}`}
+        onClick={(e) => e.stopPropagation()}
+        onChange={(e) => {
+          for (const f of Array.from(e.target.files ?? [])) take(f);
+          e.target.value = "";
+        }}
+      />
     </div>
   );
 }
@@ -353,6 +378,7 @@ export default function Composer(props: {
   palette: Record<ColorToken, string>;
   senderDefault: string;
   senderSuggestions: string[];
+  attachments: AttachedFile[];
 }) {
   const router = useRouter();
   const [c, setC] = useState(props.campaign);
@@ -377,7 +403,16 @@ export default function Composer(props: {
   const saveStateRef = useRef(saveState);
   saveStateRef.current = saveState;
   const menuRef = useRef<HTMLDivElement>(null);
-  const fields = useRef({ subject: c.subject, preheader: c.preheader, segmentIds: c.segmentIds, fromName: c.fromName, showInArchive: c.showInArchive });
+  const fields = useRef({
+    subject: c.subject,
+    preheader: c.preheader,
+    segmentIds: c.segmentIds,
+    fromName: c.fromName,
+    showInArchive: c.showInArchive,
+    attachmentIds: c.attachmentIds,
+  });
+  const [attached, setAttached] = useState<AttachedFile[]>(props.attachments);
+  const [uploading, setUploading] = useState(0);
 
   const editor = useEditor({
     extensions: [...emailExtensions(), Placeholder.configure({ placeholder: "Enter email message" })],
@@ -513,6 +548,32 @@ export default function Composer(props: {
     } catch (e) {
       setError((e as Error).message);
     }
+  }
+
+  async function attachDocument(f: File) {
+    setError("");
+    if (f.size > 10 * 1024 * 1024) return setError(`${f.name} is larger than 10 MB.`);
+    setUploading((n) => n + 1);
+    try {
+      const form = new FormData();
+      form.set("file", f);
+      const { file } = await api<{ file: AttachedFile }>("/api/files", { form });
+      setAttached((prev) => {
+        const next = [...prev.filter((x) => x.id !== file.id), file];
+        setField("attachmentIds", next.map((x) => x.id));
+        return next;
+      });
+    } catch (e) {
+      setError(`${f.name}: ${(e as Error).message}`);
+    } finally {
+      setUploading((n) => n - 1);
+    }
+  }
+
+  function removeAttachment(id: string) {
+    const next = attached.filter((x) => x.id !== id);
+    setAttached(next);
+    setField("attachmentIds", next.map((x) => x.id));
   }
 
   function insertAsset(a: Asset & { altText: string }) {
@@ -754,9 +815,27 @@ export default function Composer(props: {
 
         {editable && (
           <>
-            <span className="field-label">Images</span>
-            <Dropzone onBrowse={() => setModal({ kind: "image" })} onFile={(file) => setModal({ kind: "image", file })} />
+            <span className="field-label">Photos &amp; attachments</span>
+            <Dropzone busy={uploading > 0} onImage={(file) => setModal({ kind: "image", file })} onDocument={attachDocument} />
           </>
+        )}
+        {attached.length > 0 && (
+          <ul className="attach-list" aria-label="Attached documents">
+            {attached.map((f) => (
+              <li key={f.id}>
+                <span className="attach-name">{f.name}</span>
+                <span className="muted">{fmtBytes(f.bytes)}</span>
+                {editable && (
+                  <button type="button" className="link-btn" aria-label={`Remove ${f.name}`} onClick={() => removeAttachment(f.id)}>
+                    Remove
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {attached.length > 0 && (
+          <p className="muted hint">Attached documents appear as download links under the message, in the order listed.</p>
         )}
         <label className="check">
           <input type="checkbox" checked={c.showInArchive} disabled={!editable} onChange={(e) => setField("showInArchive", e.target.checked)} />

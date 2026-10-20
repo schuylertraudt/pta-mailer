@@ -4,6 +4,7 @@ import { pageOfficer } from "@/lib/auth/page-guard";
 import { loadBrand } from "@/lib/brand";
 import { CampaignError, getCampaign, listSenderNames } from "@/lib/campaigns/service";
 import { defaultSenderName } from "@/lib/mail/sender";
+import { filesByIds } from "@/lib/files/service";
 import { palette } from "@/lib/editor/model";
 import { listSegmentsWithCounts } from "@/lib/segments/service";
 import Composer from "@/components/admin/Composer";
@@ -19,7 +20,12 @@ export default async function CampaignPage(props: { params: Promise<{ id: string
     if (e instanceof CampaignError) notFound();
     throw e;
   }
-  const [segments, brand, senderNames] = await Promise.all([listSegmentsWithCounts(db), loadBrand(db), listSenderNames(db)]);
+  const [segments, brand, senderNames, attached] = await Promise.all([
+    listSegmentsWithCounts(db),
+    loadBrand(db),
+    listSenderNames(db),
+    filesByIds(db, campaign.attachmentIds),
+  ]);
   return (
     <Composer
       key={`${campaign.id}:${campaign.status}`}
@@ -30,6 +36,7 @@ export default async function CampaignPage(props: { params: Promise<{ id: string
         bodyJson: campaign.bodyJson,
         segmentIds: campaign.segmentIds,
         fromName: campaign.fromName,
+        attachmentIds: campaign.attachmentIds,
         showInArchive: campaign.showInArchive,
         status: campaign.status,
       }}
@@ -37,6 +44,7 @@ export default async function CampaignPage(props: { params: Promise<{ id: string
       role={officer.role}
       palette={palette(brand)}
       senderDefault={defaultSenderName()}
+      attachments={attached.map((f) => ({ id: f.id, name: f.name, bytes: f.bytes }))}
       senderSuggestions={senderNames.filter((n) => n !== defaultSenderName())}
     />
   );

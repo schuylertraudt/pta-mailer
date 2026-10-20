@@ -224,6 +224,22 @@ export const assets = pgTable(
   ],
 );
 
+// Documents (PDF, Word, Excel, PowerPoint) attached to messages as download links.
+export const files = pgTable(
+  "files",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    storageKey: text("storage_key").notNull(),
+    publicUrl: text("public_url").notNull(),
+    name: text("name").notNull(),
+    mimeType: text("mime_type").notNull(),
+    bytes: integer("bytes").notNull(),
+    uploadedBy: uuid("uploaded_by").references(() => officers.id),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("files_storage_key_key").on(t.storageKey)],
+);
+
 export const templates = pgTable("templates", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
@@ -273,6 +289,8 @@ export const campaigns = pgTable(
     segmentIds: uuid("segment_ids").array().notNull().default(sql`'{}'::uuid[]`),
     // Display name on the From line; empty uses the name in EMAIL_FROM.
     fromName: text("from_name").notNull().default(""),
+    // Documents listed as download links under the message (files.id).
+    attachmentIds: uuid("attachment_ids").array().notNull().default(sql`'{}'::uuid[]`),
     status: campaignStatus("status").notNull().default("draft"),
     createdBy: uuid("created_by")
       .notNull()
