@@ -7,6 +7,9 @@ const MESSAGES: Record<string, string> = {
   account_mismatch:
     "Your email is linked to a different Google account. Ask an admin to re-add you if your account changed.",
   AccessDenied: "Access denied.",
+  OAuthCallbackError:
+    "Google didn't finish the login (it was cancelled, timed out, or the Google window was used twice). Click Sign in with Google again.",
+  MissingCSRF: "The login form expired. Reload this page and try again.",
   Configuration:
     "Login isn't set up correctly on the server. A developer can find the reason with: sudo journalctl -u pta-web -n 50",
 };
@@ -32,7 +35,7 @@ export default async function LoginPage(props: { searchParams: Promise<{ error?:
       >
         {error && (
           <p className={s.error} role="alert">
-            {MESSAGES[error] ?? "Login failed."}
+            {MESSAGES[error] ?? `Login failed (${error.slice(0, 40)}). Try again; if it keeps happening, an admin can check the server log.`}
           </p>
         )}
         <button type="submit" className={s.button}>
