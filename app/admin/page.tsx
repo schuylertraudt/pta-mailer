@@ -3,12 +3,14 @@ import { getDb } from "@/db";
 import { segments as segmentsTable } from "@/db/schema";
 import { listCampaigns } from "@/lib/campaigns/service";
 import { listTemplates } from "@/lib/templates/service";
+import LocalTime from "@/components/admin/LocalTime";
 import NewCampaign from "@/components/admin/NewCampaign";
 
 const LABEL: Record<string, string> = {
   draft: "Draft",
   pending_approval: "Awaiting approval",
   approved: "Approved",
+  scheduled: "Scheduled",
   sending: "Sending",
   sent: "Sent",
   failed: "Failed",
@@ -32,7 +34,7 @@ export default async function CampaignsPage() {
               <th>To</th>
               <th>Status</th>
               <th>Created by</th>
-              <th>Updated</th>
+              <th>Updated / sends</th>
             </tr>
           </thead>
           <tbody>
@@ -46,7 +48,15 @@ export default async function CampaignsPage() {
                   <span className="badge">{LABEL[c.status]}</span>
                 </td>
                 <td className="muted">{c.createdBy}</td>
-                <td className="muted">{(c.sentAt ?? c.updatedAt).toLocaleString()}</td>
+                <td className="muted">
+                  {c.status === "scheduled" && c.scheduledAt ? (
+                    <>
+                      Sends <LocalTime iso={c.scheduledAt.toISOString()} />
+                    </>
+                  ) : (
+                    <LocalTime iso={(c.sentAt ?? c.updatedAt).toISOString()} />
+                  )}
+                </td>
               </tr>
             ))}
             {campaigns.length === 0 && (

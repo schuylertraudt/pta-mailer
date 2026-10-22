@@ -1,5 +1,5 @@
 import { count, desc, eq, sql, sum } from "drizzle-orm";
-import type { Db } from "@/db";
+import type { Db, DbOrTx } from "@/db";
 import { campaigns, sendClicks, sends, subscribers } from "@/db/schema";
 import { DEFAULT_BRAND_ROW, getBrandRow } from "@/lib/brand";
 import { recipientFilter } from "@/lib/campaigns/recipients";
@@ -12,27 +12,43 @@ import { hasBlocker } from "@/lib/render/checks";
  * placeholder, plus the archive copy) and queues one sends row per eligible
  * recipient. The unique (campaign, subscriber) index makes this idempotent.
  */
+/**
+ * Every check a send must pass: audience chosen, someone to send to, postal
+ * address set, no blocking content problems. Used when sending and when
+ * scheduling, so a scheduled message fails at scheduling time, not silently later.
+ */
+export async function checkSendable(tx: DbOrTx, c: typeof campaigns.$inferSelect) {
+  const brand = await getBrandRow(tx);
+  if (brand.ptaMailingAddress === DEFAULT_BRAND_ROW.ptaMailingAddress) {
+    throw new CampaignError(422, "Set the PTA mailing address in Brand settings before sending (required by CAN-SPAM).");
+  }
+  const email = await renderCampaign(tx, c);
+  if (hasBlocker(email.checks)) {
+    throw new CampaignError(422, email.checks.filter((x) => x.level === "block").map((x) => x.message).join(" "), email.checks);
+  }
+  if (!c.segmentIds.length) throw new CampaignError(422, "Choose who this message goes to.");
+  const where = await recipientFilter(tx, c.segmentIds);
+  const [{ n }] = await tx.select({ n: count() }).from(subscribers).where(where);
+  if (n === 0) throw new CampaignError(422, "No eligible recipients in the selected audiences.");
+  return { email, where, recipients: n };
+}
+
+/** Statuses a send can start from: unsent ones, plus a scheduled message whose time has come. */
+const SENDABLE = [...EDITABLE, "scheduled"] as const;
+
+/**
+ * Freezes the campaign (rendered HTML + plaintext with an unsubscribe-token
+ * placeholder, plus the archive copy) and queues one sends row per eligible
+ * recipient. The unique (campaign, subscriber) index makes this idempotent.
+ */
 export async function enqueueCampaign(db: Db, campaignId: string, officerId: string) {
   return db.transaction(async (tx) => {
     const [c] = await tx.select().from(campaigns).where(eq(campaigns.id, campaignId)).for("update");
     if (!c) throw new CampaignError(404, "Message not found");
-    if (!EDITABLE.includes(c.status as never)) throw new CampaignError(409, `Message is already ${c.status}.`);
+    if (!SENDABLE.includes(c.status as never)) throw new CampaignError(409, `Message is already ${c.status}.`);
 
-    const brand = await getBrandRow(tx);
-    if (brand.ptaMailingAddress === DEFAULT_BRAND_ROW.ptaMailingAddress) {
-      throw new CampaignError(422, "Set the PTA mailing address in Brand settings before sending (required by CAN-SPAM).");
-    }
-
-    const email = await renderCampaign(tx, c);
-    if (hasBlocker(email.checks)) {
-      throw new CampaignError(422, email.checks.filter((x) => x.level === "block").map((x) => x.message).join(" "), email.checks);
-    }
+    const { email, where } = await checkSendable(tx, c);
     const archive = await renderCampaign(tx, c, { mode: archiveMode() });
-
-    if (!c.segmentIds.length) throw new CampaignError(422, "Choose who this message goes to.");
-    const where = await recipientFilter(tx, c.segmentIds);
-    const [{ n }] = await tx.select({ n: count() }).from(subscribers).where(where);
-    if (n === 0) throw new CampaignError(422, "No eligible recipients in the selected audiences.");
 
     await tx
       .update(campaigns)
@@ -43,6 +59,7 @@ export async function enqueueCampaign(db: Db, campaignId: string, officerId: str
         archiveHtml: archive.html,
         sentBy: officerId,
         approvedBy: c.approvedBy ?? officerId,
+        scheduleError: null,
         updatedAt: new Date(),
       })
       .where(eq(campaigns.id, c.id));

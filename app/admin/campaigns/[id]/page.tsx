@@ -39,6 +39,8 @@ export default async function CampaignPage(props: { params: Promise<{ id: string
         attachmentIds: campaign.attachmentIds,
         showInArchive: campaign.showInArchive,
         status: campaign.status,
+        scheduledAt: campaign.scheduledAt?.toISOString() ?? null,
+        scheduleError: campaign.scheduleError,
       }}
       segments={segments.map((s) => ({ id: s.id, name: s.name, recipients: s.recipients }))}
       role={officer.role}

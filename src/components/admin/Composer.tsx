@@ -14,7 +14,7 @@ import { Icon } from "./icons";
 import Modal from "./Modal";
 import RecipientPicker from "./RecipientPicker";
 
-type Status = "draft" | "pending_approval" | "approved" | "sending" | "sent" | "failed";
+type Status = "draft" | "pending_approval" | "approved" | "scheduled" | "sending" | "sent" | "failed";
 type Campaign = {
   id: string;
   subject: string;
@@ -23,6 +23,8 @@ type Campaign = {
   segmentIds: string[];
   fromName: string;
   attachmentIds: string[];
+  scheduledAt: string | null;
+  scheduleError: string | null;
   showInArchive: boolean;
   status: Status;
 };
@@ -49,6 +51,7 @@ const STATUS_LABEL: Record<Status, string> = {
   draft: "Draft",
   pending_approval: "Awaiting approval",
   approved: "Approved",
+  scheduled: "Scheduled",
   sending: "Sending",
   sent: "Sent",
   failed: "Failed",
@@ -369,7 +372,7 @@ function Dropzone(props: { onImage: (f: File) => void; onDocument: (f: File) => 
 type ModalState =
   | null
   | { kind: "image" | "twoColumn"; replace?: "emailImage" | "twoColumn"; file?: File }
-  | { kind: "button" | "send" | "template" | "recipients" | "preview" };
+  | { kind: "button" | "send" | "schedule" | "template" | "recipients" | "preview" };
 
 export default function Composer(props: {
   campaign: Campaign;
@@ -532,6 +535,35 @@ export default function Composer(props: {
     }
   }
 
+  async function scheduleSend(at: Date) {
+    setBusy(true);
+    setError("");
+    try {
+      await saveRef.current();
+      await api(`/api/campaigns/${c.id}/schedule`, { body: { at: at.toISOString() } });
+      router.refresh();
+    } catch (e) {
+      setError((e as Error).message);
+      setModal(null);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function unschedule() {
+    setMenu(false);
+    setBusy(true);
+    setError("");
+    try {
+      await api(`/api/campaigns/${c.id}/schedule`, { method: "DELETE" });
+      router.refresh();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function saveNow() {
     setError("");
     await saveRef.current();
@@ -605,6 +637,16 @@ export default function Composer(props: {
         setModal({ kind: "send" });
       },
     });
+  if (canSend && editable)
+    menuItems.push({
+      label: "Schedule…",
+      onClick: async () => {
+        setMenu(false);
+        await refreshPreview();
+        setModal({ kind: "schedule" });
+      },
+    });
+  if (canSend && c.status === "scheduled") menuItems.push({ label: "Cancel schedule", onClick: () => void unschedule() });
   if (editable && props.role === "drafter" && c.status === "draft")
     menuItems.push({ label: "Submit for approval", onClick: () => action("submit", "Submitted for approval. A sender or admin will review it.") });
   if (editable && props.role === "drafter" && c.status !== "draft") menuItems.push({ label: "Withdraw submission", onClick: () => action("unsubmit", "Returned to draft.") });
@@ -625,7 +667,7 @@ export default function Composer(props: {
           <div className="row" style={{ marginTop: 4 }}>
             <span className="badge">{STATUS_LABEL[c.status]}</span>
             <span className="muted" style={{ fontSize: 13 }}>
-              {editable ? { saved: "All changes saved", dirty: "Unsaved changes", saving: "Saving…", error: "Save failed" }[saveState] : "Sent messages can't be edited"}
+              {editable ? { saved: "All changes saved", dirty: "Unsaved changes", saving: "Saving…", error: "Save failed" }[saveState] : c.status === "scheduled" ? "Locked while scheduled" : "Sent messages can't be edited"}
             </span>
           </div>
         </div>
@@ -670,6 +712,27 @@ export default function Composer(props: {
       {error && (
         <p className="error" role="alert">
           {error}
+        </p>
+      )}
+      {c.status === "scheduled" && c.scheduledAt && (
+        <section className="panel schedule-banner" role="status">
+          <div>
+            <strong>Scheduled for {formatWhen(c.scheduledAt)}</strong>
+            <span className="muted hint" style={{ display: "block" }}>
+              To {chosen.length ? chosen.map((s) => s.name).join(", ") : "nobody selected"}. Recipients are counted when it sends, so families who
+              sign up before then are included. Cancel the schedule to edit it.
+            </span>
+          </div>
+          {canSend && (
+            <button type="button" className="secondary" disabled={busy} onClick={() => void unschedule()}>
+              Cancel schedule
+            </button>
+          )}
+        </section>
+      )}
+      {c.scheduleError && editable && (
+        <p className="error" role="alert">
+          {c.scheduleError}
         </p>
       )}
       {stats && (
@@ -901,6 +964,17 @@ export default function Composer(props: {
           )}
         </Modal>
       )}
+      {modal?.kind === "schedule" && (
+        <ScheduleModal
+          subject={c.subject}
+          audience={chosen.length ? chosen.map((s) => s.name).join(", ") : "nobody selected"}
+          recipients={preview?.recipients ?? null}
+          checks={preview?.checks ?? []}
+          busy={busy}
+          onCancel={() => setModal(null)}
+          onSchedule={scheduleSend}
+        />
+      )}
       {modal?.kind === "send" && (
         <Modal title="Send message" onClose={() => setModal(null)}>
           <p>
@@ -928,6 +1002,67 @@ export default function Composer(props: {
         </Modal>
       )}
     </div>
+  );
+}
+
+function formatWhen(iso: string) {
+  return new Date(iso).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" });
+}
+
+/** "YYYY-MM-DDTHH:mm" in the browser's time zone, for datetime-local inputs. */
+function localInputValue(d: Date) {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function ScheduleModal(props: {
+  subject: string;
+  audience: string;
+  recipients: number | null;
+  checks: Check[];
+  busy: boolean;
+  onCancel: () => void;
+  onSchedule: (at: Date) => void;
+}) {
+  const [value, setValue] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(8, 0, 0, 0);
+    return localInputValue(d);
+  });
+  const at = value ? new Date(value) : null;
+  const tooSoon = !at || Number.isNaN(at.getTime()) || at.getTime() < Date.now() + 60_000;
+  const blockers = props.checks.filter((x) => x.level === "block");
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return (
+    <Modal title="Schedule message" onClose={props.onCancel}>
+      <p>
+        <strong>{props.subject || "(no subject)"}</strong>
+        <br />
+        To: {props.audience} · <strong>{props.recipients ?? "?"}</strong> recipients right now
+      </p>
+      <label htmlFor="schedule-at">Send on</label>
+      <input id="schedule-at" type="datetime-local" value={value} min={localInputValue(new Date())} onChange={(e) => setValue(e.target.value)} />
+      <p className="muted" style={{ fontSize: 13 }}>
+        Time zone: {zone}. {at && !tooSoon ? `Sends ${formatWhen(at.toISOString())}.` : "Pick a time at least a minute from now."}
+      </p>
+      {props.checks.map((x) => (
+        <p key={x.code} className={x.level === "block" ? "error" : "warn"}>
+          {x.message}
+        </p>
+      ))}
+      <p className="muted">
+        The message is locked while scheduled; cancel the schedule to make changes. Families who sign up before the send time are included.
+      </p>
+      <div className="row">
+        <button type="button" disabled={props.busy || tooSoon || blockers.length > 0 || !props.recipients} onClick={() => at && props.onSchedule(at)}>
+          Schedule
+        </button>
+        <button type="button" className="secondary" onClick={props.onCancel}>
+          Cancel
+        </button>
+      </div>
+    </Modal>
   );
 }
 

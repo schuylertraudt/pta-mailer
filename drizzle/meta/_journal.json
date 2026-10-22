@@ -78,6 +78,13 @@
       "when": 1792506515583,
       "tag": "0010_message_attachments",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792636624158,
+      "tag": "0011_scheduled_sends",
+      "breakpoints": true
     }
   ]
 }

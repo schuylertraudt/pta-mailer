@@ -5,12 +5,15 @@ import { env } from "@/lib/env";
 import { getActiveProvider, pauseSending } from "@/lib/mail/active";
 import { QuotaExceededError } from "@/lib/mail/provider";
 import { sendDueConfirmations } from "@/lib/subscribers/service";
+import { runDueSchedules } from "@/lib/campaigns/schedule";
 import { processQueue } from "./dispatch";
 
 export async function runQueueOnce() {
   const db = getDb();
   // Housekeeping: expired rate-limit windows (all windows are <= 1 hour).
   await db.delete(rateLimits).where(sql`${rateLimits.windowStart} < now() - interval '1 day'`);
+  // Scheduled messages whose time has come join the queue first.
+  const scheduled = await runDueSchedules(db);
   const provider = await getActiveProvider(db);
   const result = await processQueue(db, provider, { ratePerSecond: env().SEND_RATE_PER_SECOND, deadlineMs: 50_000 });
   // Confirmation emails that failed at signup go out once sending works again.
@@ -23,5 +26,5 @@ export async function runQueueOnce() {
       else console.error("confirmation retry failed", e);
     }
   }
-  return { ...result, confirmations };
+  return { ...result, confirmations, scheduled };
 }

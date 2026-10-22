@@ -43,6 +43,7 @@ export async function listCampaigns(db: DbOrTx) {
       subject: campaigns.subject,
       status: campaigns.status,
       segmentIds: campaigns.segmentIds,
+      scheduledAt: campaigns.scheduledAt,
       updatedAt: campaigns.updatedAt,
       sentAt: campaigns.sentAt,
       createdBy: officers.email,
@@ -91,6 +92,7 @@ export async function updateCampaign(db: Db, id: string, raw: z.input<typeof cam
   return db.transaction(async (tx) => {
     const [c] = await tx.select().from(campaigns).where(eq(campaigns.id, id)).for("update");
     if (!c) throw new CampaignError(404, "Message not found");
+    if (c.status === "scheduled") throw new CampaignError(409, "This message is scheduled. Cancel the schedule to edit it.");
     if (!EDITABLE.includes(c.status as never)) throw new CampaignError(409, "This message has already been sent and can't be edited.");
     if (patch.segmentIds) {
       patch.segmentIds = [...new Set(patch.segmentIds)];
@@ -111,6 +113,7 @@ export async function updateCampaign(db: Db, id: string, raw: z.input<typeof cam
         ...(patch.segmentIds !== undefined && { segmentIds: patch.segmentIds }),
         ...(patch.fromName !== undefined && { fromName: patch.fromName }),
         ...(patch.attachmentIds !== undefined && { attachmentIds: patch.attachmentIds }),
+        scheduleError: null,
         ...(patch.showInArchive !== undefined && { showInArchive: patch.showInArchive }),
         status: "draft",
         approvedBy: null,
@@ -146,7 +149,7 @@ export const returnToDraft = (db: Db, id: string) =>
 export async function deleteDraft(db: Db, id: string) {
   const [row] = await db
     .delete(campaigns)
-    .where(and(eq(campaigns.id, id), inArray(campaigns.status, ["draft", "pending_approval", "approved"])))
+    .where(and(eq(campaigns.id, id), inArray(campaigns.status, ["draft", "pending_approval", "approved", "scheduled"])))
     .returning({ id: campaigns.id });
   if (!row) throw new CampaignError(409, "Only unsent messages can be deleted.");
 }

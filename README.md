@@ -94,6 +94,11 @@ of it is a row in `sends`.
   Clicks on the configuration set. The webhook counts them per send row and
   per link (`send_clicks`); no IP or device is stored, and the admin UI shows
   totals only. Unsubscribe and view-online links carry `ses:no-track`.
+- **Scheduled sends run all send checks when scheduled** (audience, recipients,
+  postal address, content blockers) and are queued by the send worker
+  (`runDueSchedules`, every sweep) when due. A message that can no longer go
+  out returns to draft with the reason and the scheduler is emailed. Scheduled
+  messages are locked; cancelling returns them to approved.
 - **Two sending services, switchable by an admin.** SES and Brevo implement
   the same `EmailProvider`; the Sending page stores the choice in
   `sending_settings` (credentials stay in the environment). A provider's

@@ -132,6 +132,7 @@ button.link-btn:hover:not(:disabled) { text-decoration: underline; }
 .attach-list li { display: flex; align-items: center; gap: 12px; padding: 10px 14px; min-width: 0; }
 .attach-list li + li { border-top: 1px solid var(--border); }
 .attach-name { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 500; }
+.schedule-banner { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; padding: 16px 28px; border-color: var(--primary); }
 .dropzone-icon { color: var(--primary); display: flex; }
 .editor .ProseMirror { min-height: 320px; padding: 16px; outline: none; font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 24px; }
 .editor .ProseMirror h1 { font-size: 28px; line-height: 34px; margin: 0 0 12px; }

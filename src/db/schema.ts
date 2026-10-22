@@ -36,6 +36,7 @@ export const campaignStatus = pgEnum("campaign_status", [
   "draft",
   "pending_approval",
   "approved",
+  "scheduled",
   "sending",
   "sent",
   "failed",
@@ -289,6 +290,11 @@ export const campaigns = pgTable(
     segmentIds: uuid("segment_ids").array().notNull().default(sql`'{}'::uuid[]`),
     // Display name on the From line; empty uses the name in EMAIL_FROM.
     fromName: text("from_name").notNull().default(""),
+    // Set while status is "scheduled": the send worker queues it at this time.
+    scheduledAt: ts("scheduled_at"),
+    scheduledBy: uuid("scheduled_by").references(() => officers.id),
+    // Why a scheduled send didn't go out (shown on the message page).
+    scheduleError: text("schedule_error"),
     // Documents listed as download links under the message (files.id).
     attachmentIds: uuid("attachment_ids").array().notNull().default(sql`'{}'::uuid[]`),
     status: campaignStatus("status").notNull().default("draft"),
